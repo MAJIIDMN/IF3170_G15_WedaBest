@@ -79,7 +79,7 @@ def rotate_random(state: State, idx: int, rng: random.Random) -> State:
     return rotate_package(state, idx, axis)
 
 
-def generate_random_neighbor(state: State, rng: random.Random) -> State:
+def make_random_neighbor(state: State, rng: random.Random) -> State:
     n = len(state.placements)
     if n == 0:
         return state.copy()
@@ -95,7 +95,7 @@ def generate_random_neighbor(state: State, rng: random.Random) -> State:
         return rotate_random(state, idx, rng)
 
 
-def generate_neighbors(
+def make_neighbors(
     state: State,
     rng: random.Random,
     count: int = 20,
@@ -105,7 +105,7 @@ def generate_neighbors(
     neighbors: List[State] = []
     tries = 0
     while len(neighbors) < count and tries < max_tries * count:
-        cand = generate_random_neighbor(state, rng)
+        cand = make_random_neighbor(state, rng)
         tries += 1
         if feasible_only:
             feas, _ = is_feasible(cand)
@@ -115,7 +115,7 @@ def generate_neighbors(
     return neighbors
 
 
-def generate_initial_state(
+def make_initial_state(
     truck: Truck,
     packages: List[Package],
     rng: Optional[random.Random] = None,
@@ -157,7 +157,7 @@ def generate_initial_state(
     return state
 
 
-def generate_random_infeasible_state(
+def make_random_infeasible_state(
     truck: Truck,
     packages: List[Package],
     rng: Optional[random.Random] = None,

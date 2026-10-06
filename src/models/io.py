@@ -80,6 +80,11 @@ def save_history_csv(path: str | Path, history: List[dict], fieldnames: List[str
         writer.writerows(history)
 
 
+def load_config(path: str | Path) -> dict:
+    with Path(path).open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def ensure_output_dir(path: str | Path = "output") -> Path:
     p = Path(path)
     p.mkdir(parents=True, exist_ok=True)

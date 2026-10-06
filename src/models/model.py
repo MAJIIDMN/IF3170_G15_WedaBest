@@ -17,8 +17,8 @@ ORIENTATION_LABELS: Dict[int, str] = {
     0: "{w:x, l:y, h:z}",
     1: "{w:x, l:z, h:y}",
     2: "{w:y, l:x, h:z}",
-    3: "{w:y, l:z, h:x}",
-    4: "{w:z, l:x, h:y}",
+    3: "{w:z, l:x, h:y}",
+    4: "{w:y, l:z, h:x}",
     5: "{w:z, l:y, h:x}",
 }
 
