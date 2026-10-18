@@ -1,0 +1,7 @@
+{
+  "final_objective": 205.0,
+  "best_valid_value": 205,
+  "population_size": 50,
+  "iterations": 100,
+  "duration_s": 4.877099283999996
+}

@@ -1,0 +1,136 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 6,
+      "l": 6,
+      "h": 4
+    },
+    "max_capacity": 100
+  },
+  "placements": [
+    {
+      "package_id": "P3",
+      "position": [
+        0,
+        5,
+        0
+      ],
+      "orientation_idx": 3,
+      "orientation_label": "{w:z, l:x, h:y}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 1,
+        "h": 4
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P2",
+      "position": [
+        2,
+        0,
+        0
+      ],
+      "orientation_idx": 0,
+      "orientation_label": "{w:x, l:y, h:z}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P4",
+      "position": [
+        0,
+        2,
+        0
+      ],
+      "orientation_idx": 0,
+      "orientation_label": "{w:x, l:y, h:z}",
+      "effective_dimensions": {
+        "w": 6,
+        "l": 3,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P6",
+      "position": [
+        0,
+        0,
+        2
+      ],
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 3,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P8",
+      "position": null,
+      "orientation_idx": 0,
+      "orientation_label": "{w:x, l:y, h:z}",
+      "effective_dimensions": {
+        "w": 4,
+        "l": 4,
+        "h": 2
+      },
+      "is_inside": false
+    },
+    {
+      "package_id": "P7",
+      "position": [
+        2,
+        5,
+        0
+      ],
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
+      "effective_dimensions": {
+        "w": 1,
+        "l": 1,
+        "h": 3
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P5",
+      "position": null,
+      "orientation_idx": 5,
+      "orientation_label": "{w:z, l:y, h:x}",
+      "effective_dimensions": {
+        "w": 4,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": false
+    },
+    {
+      "package_id": "P1",
+      "position": [
+        3,
+        3,
+        2
+      ],
+      "orientation_idx": 0,
+      "orientation_label": "{w:x, l:y, h:z}",
+      "effective_dimensions": {
+        "w": 3,
+        "l": 3,
+        "h": 2
+      },
+      "is_inside": true
+    }
+  ],
+  "total_value": 205,
+  "total_weight": 96,
+  "inside_count": 6,
+  "outside_count": 2
+}

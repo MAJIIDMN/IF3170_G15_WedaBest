@@ -1,0 +1,132 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 6,
+      "l": 6,
+      "h": 4
+    },
+    "max_capacity": 100
+  },
+  "placements": [
+    {
+      "package_id": "P4",
+      "position": null,
+      "orientation_idx": 3,
+      "orientation_label": "{w:z, l:x, h:y}",
+      "effective_dimensions": {
+        "w": 3,
+        "l": 2,
+        "h": 6
+      },
+      "is_inside": false
+    },
+    {
+      "package_id": "P7",
+      "position": null,
+      "orientation_idx": 3,
+      "orientation_label": "{w:z, l:x, h:y}",
+      "effective_dimensions": {
+        "w": 1,
+        "l": 3,
+        "h": 1
+      },
+      "is_inside": false
+    },
+    {
+      "package_id": "P2",
+      "position": [
+        4,
+        1,
+        0
+      ],
+      "orientation_idx": 1,
+      "orientation_label": "{w:x, l:z, h:y}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P6",
+      "position": null,
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 3,
+        "h": 2
+      },
+      "is_inside": false
+    },
+    {
+      "package_id": "P8",
+      "position": [
+        2,
+        0,
+        0
+      ],
+      "orientation_idx": 4,
+      "orientation_label": "{w:y, l:z, h:x}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 4,
+        "h": 4
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P1",
+      "position": [
+        2,
+        4,
+        0
+      ],
+      "orientation_idx": 3,
+      "orientation_label": "{w:z, l:x, h:y}",
+      "effective_dimensions": {
+        "w": 3,
+        "l": 2,
+        "h": 3
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P5",
+      "position": [
+        0,
+        0,
+        1
+      ],
+      "orientation_idx": 1,
+      "orientation_label": "{w:x, l:z, h:y}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 4,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "P3",
+      "position": [
+        0,
+        2,
+        0
+      ],
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
+      "effective_dimensions": {
+        "w": 2,
+        "l": 4,
+        "h": 1
+      },
+      "is_inside": true
+    }
+  ],
+  "total_value": 200,
+  "total_weight": 98,
+  "inside_count": 5,
+  "outside_count": 3
+}
