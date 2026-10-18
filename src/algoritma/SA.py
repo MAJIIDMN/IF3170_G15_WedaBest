@@ -7,21 +7,18 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from models.model import State
-from models.geometry import is_feasible, validate
+from models.geometry import is_feasible, overweight_score, validate
 from models.operators import make_random_neighbor
 
 
 def penalty(state: State) -> float:
     violations = validate(state)
-    weight = state.total_weight()
-    cap = state.truck.max_capacity
-    v_weight = 0.0 if weight <= cap else 1 + (weight - cap) / cap
     return (
         len(violations["bounds"])
         + len(violations["overlap"])
         + len(violations["support"])
         + len(violations["fragile"])
-        + v_weight
+        + overweight_score(state)
     )
 
 
@@ -203,10 +200,10 @@ if __name__ == "__main__":
     print("dataset   :", dataset_path)
     print("parameter :", params)
 
-    truck, packages = load_dataset(dataset_path)
+    trucks, packages = load_dataset(dataset_path)
     for k, seed in enumerate(config["seeds"], start=1):
         rng = random.Random(seed)
-        s0 = make_initial_state(truck, packages, rng)
+        s0 = make_initial_state(trucks, packages, rng)
         result = run(s0, rng, **params)
         out = save_result(
             result,

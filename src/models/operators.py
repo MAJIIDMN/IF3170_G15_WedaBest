@@ -36,6 +36,7 @@ def swap_packages(state: State, i: int, j: int) -> State:
     pj = new_state.placements[j]
     pi.position, pj.position = pj.position, pi.position
     pi.orientation_idx, pj.orientation_idx = pj.orientation_idx, pi.orientation_idx
+    pi.truck_idx, pj.truck_idx = pj.truck_idx, pi.truck_idx
     return new_state
 
 
@@ -43,9 +44,13 @@ def relocate_package(
     state: State,
     idx: int,
     new_position: Optional[Tuple[int, int, int]],
+    truck_idx: Optional[int] = None,
 ) -> State:
     new_state = state.copy()
-    new_state.placements[idx].position = new_position
+    placement = new_state.placements[idx]
+    placement.position = new_position
+    if truck_idx is not None:
+        placement.truck_idx = truck_idx
     return new_state
 
 
@@ -54,14 +59,15 @@ def relocate_random(
     idx: int,
     rng: random.Random,
 ) -> State:
-    dims = state.placements[idx].effective_dims
+    new_state = state.copy()
+    placement = new_state.placements[idx]
     if rng.random() < 0.15: #placeholder presentase
-        return relocate_package(state, idx, None)
-    pos = random_position(dims, state.truck, rng)
-    # Jika tidak muat sama sekali, keluarkan
-    if pos is None:
-        pos = None
-    return relocate_package(state, idx, pos)
+        placement.position = None
+        return new_state
+    truck_idx = rng.randrange(len(new_state.trucks))
+    placement.truck_idx = truck_idx
+    placement.position = random_position(placement.effective_dims, new_state.trucks[truck_idx], rng)
+    return new_state
 
 
 def rotate_package(state: State, idx: int, axis: str) -> State:
@@ -116,30 +122,32 @@ def make_neighbors(
 
 
 def make_initial_state(
-    truck: Truck,
+    trucks: List[Truck],
     packages: List[Package],
     rng: Optional[random.Random] = None,
     max_attempts_per_package: int = 100,
     ensure_feasible: bool = True,
 ) -> State:
+    if not isinstance(trucks, list):
+        trucks = [trucks]
     if rng is None:
         rng = random.Random()
 
     order = packages[:]
     rng.shuffle(order)
 
-    state = State(truck=truck, placements=[])
+    state = State(trucks=trucks, placements=[])
     for pkg in order:
-        # Coba orientasi random + posisi random
         placed: Optional[Placement] = None
         for _ in range(max_attempts_per_package):
             ori = rng.randrange(6)
             dims = get_effective_dimensions(pkg.dimensions, ori)
-            pos = random_position(dims, truck, rng)
+            truck_idx = rng.randrange(len(trucks))
+            pos = random_position(dims, trucks[truck_idx], rng)
             if pos is None:
                 continue
-            cand_placement = Placement(package=pkg, position=pos, orientation_idx=ori)
-            temp_state = State(truck=truck, placements=state.placements + [cand_placement])
+            cand_placement = Placement(package=pkg, position=pos, orientation_idx=ori, truck_idx=truck_idx)
+            temp_state = State(trucks=trucks, placements=state.placements + [cand_placement])
             feas, violations = is_feasible(temp_state)
             if feas:
                 placed = cand_placement
@@ -158,19 +166,22 @@ def make_initial_state(
 
 
 def make_random_infeasible_state(
-    truck: Truck,
+    trucks: List[Truck],
     packages: List[Package],
     rng: Optional[random.Random] = None,
 ) -> State:
+    if not isinstance(trucks, list):
+        trucks = [trucks]
     if rng is None:
         rng = random.Random()
     placements: List[Placement] = []
     for pkg in packages:
         ori = rng.randrange(6)
+        truck_idx = rng.randrange(len(trucks))
         dims = get_effective_dimensions(pkg.dimensions, ori)
         if rng.random() < 0.5:
-            pos = random_position(dims, truck, rng)
+            pos = random_position(dims, trucks[truck_idx], rng)
         else:
             pos = None
-        placements.append(Placement(package=pkg, position=pos, orientation_idx=ori))
-    return State(truck=truck, placements=placements)
+        placements.append(Placement(package=pkg, position=pos, orientation_idx=ori, truck_idx=truck_idx))
+    return State(trucks=trucks, placements=placements)

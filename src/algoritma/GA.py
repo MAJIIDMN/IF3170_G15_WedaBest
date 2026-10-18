@@ -6,21 +6,18 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from models.model import State, Truck, Package
-from models.geometry import is_feasible, validate
+from models.geometry import is_feasible, overweight_score, validate
 from models.operators import make_initial_state, make_random_neighbor
 
 
 def penalty(state: State) -> float:
     violations = validate(state)
-    weight = state.total_weight()
-    cap = state.truck.max_capacity
-    v_weight = 0.0 if weight <= cap else 1 + (weight - cap) / cap
     return (
         len(violations["bounds"])
         + len(violations["overlap"])
         + len(violations["support"])
         + len(violations["fragile"])
-        + v_weight
+        + overweight_score(state)
     )
 
 
@@ -30,12 +27,12 @@ def objective_function(state: State) -> float:
 
 
 def make_population(
-    truck: Truck,
+    trucks: List[Truck],
     packages: List[Package],
     rng: random.Random,
     size: int,
 ) -> List[State]:
-    return [make_initial_state(truck, packages, rng) for _ in range(size)]
+    return [make_initial_state(trucks, packages, rng) for _ in range(size)]
 
 
 def roulette(population: List[State], fitnesses: List[float], rng: random.Random) -> State:
@@ -62,7 +59,7 @@ def crossover(parent_a: State, parent_b: State, rng: random.Random, crossover_ra
     for placement in parent_a.placements:
         source = placement if rng.random() < 0.5 else donor[placement.package.id]
         child_placements.append(source.copy())
-    return State(truck=parent_a.truck, placements=child_placements)
+    return State(trucks=list(parent_a.trucks), placements=child_placements)
 
 
 def mutate(individual: State, rng: random.Random, mutation_rate: float, max_moves: int = 3) -> State:
@@ -89,7 +86,7 @@ def best_valid(population: List[State]) -> Optional[State]:
 
 
 def run(
-    truck: Truck,
+    trucks: List[Truck],
     packages: List[Package],
     rng: random.Random,
     population_size: int = 50,
@@ -101,7 +98,7 @@ def run(
 ) -> dict:
     start = time.perf_counter()
 
-    population = make_population(truck, packages, rng, population_size)
+    population = make_population(trucks, packages, rng, population_size)
 
     history: List[dict] = []
     best_individual: Optional[State] = None

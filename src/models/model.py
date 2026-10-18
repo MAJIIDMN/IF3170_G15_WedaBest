@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import List, Tuple, Optional, Dict
-import copy
 
 ORIENTATIONS: List[Tuple[int, int, int]] = [
     (0, 1, 2),  # 0: (w, l, h)
@@ -134,6 +133,7 @@ class Placement:
     package: Package
     position: Optional[Tuple[int, int, int]] = None
     orientation_idx: int = 0
+    truck_idx: int = 0
 
     @property
     def is_inside(self) -> bool:
@@ -181,6 +181,7 @@ class Placement:
             package=self.package,
             position=self.position,
             orientation_idx=self.orientation_idx,
+            truck_idx=self.truck_idx,
         )
 
     def to_dict(self) -> dict:
@@ -189,6 +190,7 @@ class Placement:
             "position": list(self.position) if self.position else None,
             "orientation_idx": self.orientation_idx,
             "orientation_label": self.orientation_label(),
+            "truck_idx": self.truck_idx,
             "effective_dimensions": {"w": self.w, "l": self.l, "h": self.h},
             "is_inside": self.is_inside,
         }
@@ -197,9 +199,15 @@ class Placement:
 @dataclass
 class State:
 
-    truck: Truck
+    trucks: List[Truck] = field(default_factory=list)
     placements: List[Placement] = field(default_factory=list)
 
+    @property
+    def truck(self) -> Truck:
+        return self.trucks[0]
+
+    def truck_of(self, placement: Placement) -> Truck:
+        return self.trucks[placement.truck_idx]
 
     def get_placement(self, package_id: str) -> Optional[Placement]:
         for p in self.placements:
@@ -213,22 +221,28 @@ class State:
     def outside_placements(self) -> List[Placement]:
         return [p for p in self.placements if not p.is_inside]
 
+    def placements_on(self, truck_idx: int) -> List[Placement]:
+        return [p for p in self.placements if p.is_inside and p.truck_idx == truck_idx]
+
     def total_value(self) -> int:
         return sum(p.package.value for p in self.inside_placements())
 
     def total_weight(self) -> int:
         return sum(p.package.weight for p in self.inside_placements())
 
+    def truck_weight(self, truck_idx: int) -> int:
+        return sum(p.package.weight for p in self.placements_on(truck_idx))
+
     def copy(self) -> "State":
-        """Deep copy placements (package ref tetap shared, position/orientation di-copy)."""
+        """Copy placements (package ref tetap shared) dan salin list truk (truk immutable)."""
         return State(
-            truck=copy.deepcopy(self.truck),
+            trucks=list(self.trucks),
             placements=[p.copy() for p in self.placements],
         )
 
     def to_dict(self) -> dict:
         return {
-            "truck": self.truck.to_dict(),
+            "trucks": [t.to_dict() for t in self.trucks],
             "placements": [p.to_dict() for p in self.placements],
             "total_value": self.total_value(),
             "total_weight": self.total_weight(),
@@ -237,9 +251,11 @@ class State:
         }
 
     @staticmethod
-    def from_packages(truck: Truck, packages: List[Package]) -> "State":
+    def from_packages(trucks: List[Truck], packages: List[Package]) -> "State":
+        if not isinstance(trucks, list):
+            trucks = [trucks]
         return State(
-            truck=truck,
+            trucks=list(trucks),
             placements=[Placement(package=p, position=None, orientation_idx=0) for p in packages],
         )
 
