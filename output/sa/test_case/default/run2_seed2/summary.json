@@ -1,5 +1,6 @@
 {
-  "final_objective": 200.0,
-  "duration_s": 5.693566332993214,
+  "objective": "value",
+  "final_objective": 205.0,
+  "duration_s": 4.079514399985783,
   "stuck_count": 18
 }
