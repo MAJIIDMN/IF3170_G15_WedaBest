@@ -4,10 +4,21 @@
   "output_dir": "output",
 
   "hill_climbing": {
-    "neighbors_per_iter": 100,
-    "max_iter": 1000,
-    "max_sideways": 50,
-    "max_restart": 10
+    "steepest_ascent": {
+      "max_iter": 1000
+    },
+    "sideways": {
+      "max_iter": 1000,
+      "max_sideways": 50
+    },
+    "stochastic": {
+      "max_iter": 1000,
+      "max_neighbor_tries": 50
+    },
+    "random_restart": {
+      "max_iter_per_restart": 1000,
+      "max_restart": 10
+    }
   },
 
   "simulated_annealing": {

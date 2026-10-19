@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import List, Tuple, Optional
+from typing import Iterator, List, Tuple, Optional
 
 from .model import State, Placement, Truck, Package, rotate_orientation_idx, get_effective_dimensions
 from .geometry import is_feasible
@@ -119,6 +119,77 @@ def make_neighbors(
                 continue
         neighbors.append(cand)
     return neighbors
+
+
+def state_signature(state: State) -> Tuple[tuple, ...]:
+    return tuple(sorted(
+        (
+            p.package.id,
+            p.position,
+            p.orientation_idx,
+            p.truck_idx,
+        )
+        for p in state.placements
+    ))
+
+
+def iter_all_feasible_neighbors(state: State) -> Iterator[State]:
+    # Membangkitkan seluruh successor feasible dari satu operasi yang diizinkan.
+    # Operasinya adalah menukar dua paket, memindahkan satu paket ke
+    # koordinat integer lain (termasuk ke luar truk), dan merotasi satu paket
+    # 90 derajat terhadap sumbu x/y/z. State duplikat dan state asal tidak
+    # dikembalikan.
+
+    seen = {state_signature(state)}
+
+    def is_new_feasible(candidate: State) -> bool:
+        signature = state_signature(candidate)
+        if signature in seen:
+            return False
+        seen.add(signature)
+        return is_feasible(candidate)[0]
+
+    n = len(state.placements)
+
+    # Menukar dua paket, baik paket di dalam maupun di luar truk
+    for i in range(n):
+        for j in range(i + 1, n):
+            candidate = swap_packages(state, i, j)
+            if is_new_feasible(candidate):
+                yield candidate
+
+    # Memindahkan sebuah paket ke koordinat lain atau ke luar truk
+    for idx, placement in enumerate(state.placements):
+        if placement.is_inside:
+            candidate = relocate_package(state, idx, None)
+            if is_new_feasible(candidate):
+                yield candidate
+
+        w, l, h = placement.effective_dims
+        for truck_idx, truck in enumerate(state.trucks):
+            if w > truck.w or l > truck.l or h > truck.h:
+                continue
+            for x in range(truck.w - w + 1):
+                for y in range(truck.l - l + 1):
+                    for z in range(truck.h - h + 1):
+                        position = (x, y, z)
+                        if placement.position == position and placement.truck_idx == truck_idx:
+                            continue
+                        candidate = relocate_package(state, idx, position, truck_idx)
+                        if is_new_feasible(candidate):
+                            yield candidate
+
+    # Merotasi sebuah paket 90 derajat terhadap salah satu sumbu
+    for idx in range(n):
+        for axis in ("x", "y", "z"):
+            candidate = rotate_package(state, idx, axis)
+            if is_new_feasible(candidate):
+                yield candidate
+
+
+def make_all_feasible_neighbors(state: State) -> List[State]:
+    """Versi list dari iter_all_feasible_neighbors untuk pemanggil yang membutuhkannya."""
+    return list(iter_all_feasible_neighbors(state))
 
 
 def make_initial_state(
