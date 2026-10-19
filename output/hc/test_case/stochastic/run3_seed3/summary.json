@@ -1,0 +1,20 @@
+{
+  "algorithm": "hill_climbing",
+  "variant": "stochastic",
+  "seed": 3,
+  "params": {
+    "max_iter": 1000,
+    "max_neighbor_tries": 50
+  },
+  "initial_value": 135,
+  "final_value": 160,
+  "final_objective": 160,
+  "best_valid_value": 160,
+  "iterations": 1000,
+  "duration_s": 0.1003744000045117,
+  "termination_reason": "MAX_ITERATIONS",
+  "extra": {
+    "accepted_moves": 3,
+    "rejected_moves": 997
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "algorithm": "hill_climbing",
+  "variant": "sideways",
+  "seed": 1,
+  "params": {
+    "max_iter": 1000,
+    "max_sideways": 50
+  },
+  "initial_value": 205,
+  "final_value": 205,
+  "final_objective": 205,
+  "best_valid_value": 205,
+  "iterations": 50,
+  "duration_s": 0.892615199998545,
+  "termination_reason": "MAX_SIDEWAYS",
+  "extra": {
+    "sideways_moves": 50,
+    "final_consecutive_sideways": 50
+  }
+}

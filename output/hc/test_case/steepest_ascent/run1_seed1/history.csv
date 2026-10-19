@@ -1,0 +1,3 @@
+iter,objective,value,candidate_value,accepted,neighbors_evaluated
+0,205,205,,False,0
+1,205,205,205,False,39
