@@ -1,0 +1,84 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 4,
+      "l": 4,
+      "h": 4
+    },
+    "max_capacity": 100
+  },
+  "packages": [
+    {
+      "id": "F1",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 60,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    },
+    {
+      "id": "F2",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 50,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    },
+    {
+      "id": "F3",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 40,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    },
+    {
+      "id": "F4",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 30,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    },
+    {
+      "id": "F5",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 20,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    },
+    {
+      "id": "F6",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 10,
+      "weight": 5,
+      "is_fragile": true,
+      "eta": 3
+    }
+  ]
+}

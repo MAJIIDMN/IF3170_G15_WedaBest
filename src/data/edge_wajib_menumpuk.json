@@ -1,0 +1,108 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 4,
+      "l": 4,
+      "h": 4
+    },
+    "max_capacity": 1000
+  },
+  "packages": [
+    {
+      "id": "K1",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 10,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K2",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 20,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K3",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 30,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K4",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 40,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K5",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 50,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K6",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 60,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K7",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 70,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "K8",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 80,
+      "weight": 10,
+      "is_fragile": false,
+      "eta": 3
+    }
+  ]
+}

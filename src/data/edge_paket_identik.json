@@ -1,0 +1,156 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 6,
+      "l": 6,
+      "h": 2
+    },
+    "max_capacity": 10
+  },
+  "packages": [
+    {
+      "id": "S01",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S02",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S03",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S04",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S05",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S06",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S07",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S08",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S09",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S10",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S11",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "S12",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 1
+      },
+      "value": 10,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    }
+  ]
+}
