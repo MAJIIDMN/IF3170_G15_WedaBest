@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from pathlib import Path
 
-from algoritma import GA, SA
+from algoritma import GA, HC, SA
 from models.geometry import is_feasible
 from models.io import load_config, load_dataset
 from models.operators import make_initial_state
@@ -26,13 +26,37 @@ def choose_algorithm() -> str:
     print("Pilih algoritma:")
     print("  1. Simulated Annealing")
     print("  2. Genetic Algorithm")
+    print("  3. Hill Climbing")
     while True:
-        choice = input("Pilihan (1/2): ").strip()
+        choice = input("Pilihan (1/2/3): ").strip()
         if choice == "1":
             return "sa"
         if choice == "2":
             return "ga"
-        print("Masukkan 1 atau 2.")
+        if choice == "3":
+            return "hc"
+        print("Masukkan 1, 2, atau 3.")
+
+
+def choose_hc_variant() -> str:
+    print("Pilih varian Hill Climbing:")
+    print("  1. Steepest-Ascent")
+    print("  2. Sideways Move")
+    print("  3. Stochastic")
+    print("  4. Random Restart")
+    print("  5. Semua varian (seluruh seed eksperimen)")
+    choices = {
+        "1": "steepest_ascent",
+        "2": "sideways",
+        "3": "stochastic",
+        "4": "random_restart",
+        "5": "all",
+    }
+    while True:
+        choice = input("Pilihan (1/2/3/4/5): ").strip()
+        if choice in choices:
+            return choices[choice]
+        print("Masukkan angka 1 sampai 5.")
 
 
 def main() -> None:
@@ -47,15 +71,16 @@ def main() -> None:
     output_root = BASE_DIR.parent / config["output_dir"]
 
     algorithm = choose_algorithm()
-    seed = _ask_int("Seed", config["seeds"][0])
-    rng = random.Random(seed)
-
     if algorithm == "sa":
+        seed = _ask_int("Seed", config["seeds"][0])
+        rng = random.Random(seed)
         params = SA.params_from_config(config)
         initial_state = make_initial_state(trucks, packages, rng)
         result = SA.run(initial_state, rng, **params)
         out = SA.save_result(result, output_root / "sa" / dataset / f"seed{seed}")
-    else:
+    elif algorithm == "ga":
+        seed = _ask_int("Seed", config["seeds"][0])
+        rng = random.Random(seed)
         params = GA.params_from_config(config)
         population_size = _ask_int("Jumlah populasi", 50)
         max_iter = _ask_int("Banyak iterasi", 100)
@@ -71,6 +96,39 @@ def main() -> None:
             result,
             output_root / "ga" / dataset
             / f"pop{population_size}_iter{max_iter}" / f"seed{seed}",
+        )
+    else:
+        variant = choose_hc_variant()
+        if variant == "all":
+            records = HC.run_all_experiments(
+                config,
+                trucks,
+                packages,
+                output_root,
+                dataset,
+            )
+            print(f"Selesai menjalankan {len(records)} eksperimen HC.")
+            for record in records:
+                hc_result = record["result"]
+                print(
+                    f"{hc_result['variant']} seed={hc_result['seed']}: "
+                    f"{hc_result['initial_state'].total_value()} -> "
+                    f"{hc_result['final_state'].total_value()}, "
+                    f"iterasi={hc_result['iterations']}, "
+                    f"durasi={hc_result['duration_s']:.2f}s"
+                )
+            print(f"Output      : {output_root / 'hc' / dataset}")
+            return
+
+        seed = _ask_int("Seed", config["seeds"][0])
+        rng = random.Random(seed)
+        params = HC.params_from_config(config, variant)
+        initial_state = make_initial_state(trucks, packages, rng)
+        result = HC.run(initial_state, rng, variant, **params)
+        result["seed"] = seed
+        out = HC.save_result(
+            result,
+            output_root / "hc" / dataset / variant / f"seed{seed}",
         )
 
     feasible = is_feasible(result["final_state"])[0]
