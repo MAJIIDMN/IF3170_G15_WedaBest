@@ -6,6 +6,7 @@ from pathlib import Path
 from algoritma import GA, HC, SA
 from models.geometry import is_feasible
 from models.io import load_config, load_dataset
+from models.objective import OBJECTIVES, normalize_objective, output_root_for
 from models.operators import make_initial_state
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -59,6 +60,17 @@ def choose_hc_variant() -> str:
         print("Masukkan angka 1 sampai 5.")
 
 
+def choose_objective(default: str) -> str:
+    print("Pilih objective function:")
+    print("  value : total value paket di dalam truk (OF utama)")
+    print("  eta   : value x (1 + 1/eta), paket ber-ETA kecil diutamakan (OF bonus)")
+    while True:
+        choice = _ask("Objective", default)
+        if choice in OBJECTIVES:
+            return choice
+        print(f"Masukkan salah satu dari: {', '.join(OBJECTIVES)}.")
+
+
 def main() -> None:
     config = load_config(CONFIG_PATH)
     dataset_path = Path(_ask("Path dataset", config["dataset_utama"]))
@@ -68,7 +80,8 @@ def main() -> None:
     trucks, packages = load_dataset(dataset_path)
     print(f"Jumlah truk: {len(trucks)} | jumlah paket: {len(packages)}")
 
-    output_root = BASE_DIR.parent / config["output_dir"]
+    config["objective"] = choose_objective(normalize_objective(config.get("objective", "value")))
+    output_root = output_root_for(BASE_DIR.parent / config["output_dir"], config["objective"])
 
     algorithm = choose_algorithm()
     if algorithm == "sa":
@@ -134,6 +147,7 @@ def main() -> None:
     feasible = is_feasible(result["final_state"])[0]
     print(f"Value awal  : {result['initial_state'].total_value()}")
     print(f"Value akhir : {result['final_state'].total_value()} (feasible: {feasible})")
+    print(f"Objective   : {result['final_objective']:.2f} ({config['objective']})")
     print(f"Best valid  : {result['best_valid_value']}")
     print(f"Durasi      : {result['duration_s']:.2f}s")
     print(f"Output      : {out}")

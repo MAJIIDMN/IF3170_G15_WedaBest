@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 
 from models.geometry import is_feasible
 from models.model import Package, State, Truck
+from models.objective import normalize_objective, state_score
 from models.operators import (
     iter_all_feasible_neighbors,
     make_initial_state,
@@ -51,6 +52,7 @@ def _require_nonnegative(name: str, value: int) -> None:
 def _best_feasible_neighbor(
     state: State,
     rng: random.Random,
+    objective: str = "value",
 ) -> Tuple[Optional[State], Optional[int], int]:
     best: Optional[State] = None
     best_value: Optional[int] = None
@@ -59,7 +61,7 @@ def _best_feasible_neighbor(
 
     for neighbor in iter_all_feasible_neighbors(state):
         neighbor_count += 1
-        value = neighbor.total_value()
+        value = state_score(neighbor, objective)
         if best_value is None or value > best_value:
             best = neighbor
             best_value = value
@@ -105,7 +107,7 @@ def _result(
         "initial_state": initial_state.copy(),
         "final_state": final_state.copy(),
         "best_valid_state": final_state.copy(),
-        "final_objective": final_state.total_value(),
+        "final_objective": state_score(final_state, params.get("objective", "value")),
         "best_valid_value": final_state.total_value(),
         "iterations": iterations,
         "duration_s": duration_s,
@@ -119,16 +121,18 @@ def run_steepest(
     initial_state: State,
     rng: random.Random,
     max_iter: int = 1000,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     _require_nonnegative("max_iter", max_iter)
     _require_feasible_initial_state(initial_state)
     start = time.perf_counter()
     current = initial_state.copy()
-    current_value = current.total_value()
+    current_value = state_score(current, objective)
     history: List[dict] = [{
         "iter": 0,
         "objective": current_value,
-        "value": current_value,
+        "value": current.total_value(),
         "candidate_value": None,
         "accepted": False,
         "neighbors_evaluated": 0,
@@ -137,7 +141,7 @@ def run_steepest(
     iterations = 0
     termination_reason = "MAX_ITERATIONS"
     for iteration in range(1, max_iter + 1):
-        neighbor, neighbor_value, neighbor_count = _best_feasible_neighbor(current, rng)
+        neighbor, neighbor_value, neighbor_count = _best_feasible_neighbor(current, rng, objective)
         iterations = iteration
         accepted = neighbor is not None and neighbor_value > current_value
 
@@ -149,7 +153,7 @@ def run_steepest(
         history.append({
             "iter": iteration,
             "objective": current_value,
-            "value": current_value,
+            "value": current.total_value(),
             "candidate_value": neighbor_value,
             "accepted": accepted,
             "neighbors_evaluated": neighbor_count,
@@ -165,7 +169,7 @@ def run_steepest(
     duration = time.perf_counter() - start
     return _result(
         "steepest_ascent",
-        {"max_iter": max_iter},
+        {"max_iter": max_iter, "objective": objective},
         initial_state,
         current,
         iterations,
@@ -180,19 +184,21 @@ def run_sideways(
     rng: random.Random,
     max_iter: int = 1000,
     max_sideways: int = 50,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     _require_nonnegative("max_iter", max_iter)
     _require_nonnegative("max_sideways", max_sideways)
     _require_feasible_initial_state(initial_state)
     start = time.perf_counter()
     current = initial_state.copy()
-    current_value = current.total_value()
+    current_value = state_score(current, objective)
     consecutive_sideways = 0
     total_sideways = 0
     history: List[dict] = [{
         "iter": 0,
         "objective": current_value,
-        "value": current_value,
+        "value": current.total_value(),
         "candidate_value": None,
         "accepted": False,
         "neighbors_evaluated": 0,
@@ -203,7 +209,7 @@ def run_sideways(
     iterations = 0
     termination_reason = "MAX_ITERATIONS"
     for iteration in range(1, max_iter + 1):
-        neighbor, neighbor_value, neighbor_count = _best_feasible_neighbor(current, rng)
+        neighbor, neighbor_value, neighbor_count = _best_feasible_neighbor(current, rng, objective)
         iterations = iteration
         accepted = False
         was_sideways = False
@@ -229,7 +235,7 @@ def run_sideways(
         history.append({
             "iter": iteration,
             "objective": current_value,
-            "value": current_value,
+            "value": current.total_value(),
             "candidate_value": neighbor_value,
             "accepted": accepted,
             "neighbors_evaluated": neighbor_count,
@@ -246,7 +252,7 @@ def run_sideways(
     duration = time.perf_counter() - start
     return _result(
         "sideways",
-        {"max_iter": max_iter, "max_sideways": max_sideways},
+        {"max_iter": max_iter, "max_sideways": max_sideways, "objective": objective},
         initial_state,
         current,
         iterations,
@@ -265,7 +271,9 @@ def run_stochastic(
     rng: random.Random,
     max_iter: int = 1000,
     max_neighbor_tries: int = 50,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     _require_nonnegative("max_iter", max_iter)
     if max_neighbor_tries <= 0:
         raise ValueError(
@@ -274,13 +282,13 @@ def run_stochastic(
     _require_feasible_initial_state(initial_state)
     start = time.perf_counter()
     current = initial_state.copy()
-    current_value = current.total_value()
+    current_value = state_score(current, objective)
     accepted_moves = 0
     rejected_moves = 0
     history: List[dict] = [{
         "iter": 0,
         "objective": current_value,
-        "value": current_value,
+        "value": current.total_value(),
         "candidate_value": None,
         "accepted": False,
         "neighbor_tries": 0,
@@ -296,7 +304,7 @@ def run_stochastic(
             history.append({
                 "iter": iteration,
                 "objective": current_value,
-                "value": current_value,
+                "value": current.total_value(),
                 "candidate_value": None,
                 "accepted": False,
                 "neighbor_tries": tries,
@@ -304,7 +312,7 @@ def run_stochastic(
             termination_reason = "NO_FEASIBLE_NEIGHBOR_FOUND"
             break
 
-        neighbor_value = neighbor.total_value()
+        neighbor_value = state_score(neighbor, objective)
         accepted = neighbor_value > current_value
         if accepted:
             current = neighbor
@@ -316,7 +324,7 @@ def run_stochastic(
         history.append({
             "iter": iteration,
             "objective": current_value,
-            "value": current_value,
+            "value": current.total_value(),
             "candidate_value": neighbor_value,
             "accepted": accepted,
             "neighbor_tries": tries,
@@ -325,7 +333,7 @@ def run_stochastic(
     duration = time.perf_counter() - start
     return _result(
         "stochastic",
-        {"max_iter": max_iter, "max_neighbor_tries": max_neighbor_tries},
+        {"max_iter": max_iter, "max_neighbor_tries": max_neighbor_tries, "objective": objective},
         initial_state,
         current,
         iterations,
@@ -341,7 +349,9 @@ def run_random_restart(
     rng: random.Random,
     max_iter_per_restart: int = 1000,
     max_restart: int = 10,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     _require_nonnegative("max_iter_per_restart", max_iter_per_restart)
     _require_nonnegative("max_restart", max_restart)
     _require_feasible_initial_state(initial_state)
@@ -365,7 +375,7 @@ def run_random_restart(
             if search_number == 1
             else make_initial_state(trucks, packages, rng)
         )
-        search_result = run_steepest(search_initial, rng, max_iter_per_restart)
+        search_result = run_steepest(search_initial, rng, max_iter_per_restart, objective)
         search_final = search_result["final_state"]
         search_value = search_final.total_value()
 
@@ -393,7 +403,7 @@ def run_random_restart(
             "duration_s": search_result["duration_s"],
         })
 
-        if best_state is None or search_value > best_state.total_value():
+        if best_state is None or state_score(search_final, objective) > state_score(best_state, objective):
             best_state = search_final.copy()
             best_restart = search_number
 
@@ -411,6 +421,7 @@ def run_random_restart(
         {
             "max_iter_per_restart": max_iter_per_restart,
             "max_restart": max_restart,
+            "objective": objective,
         },
         first_initial,
         best_state,
@@ -452,7 +463,9 @@ def params_from_config(config: dict, variant: str) -> dict:
     missing = [key for key in CONFIG_KEYS[normalized] if key not in variant_config]
     if missing:
         raise KeyError(f"Config {normalized} tidak punya key: {missing}")
-    return {key: variant_config[key] for key in CONFIG_KEYS[normalized]}
+    params = {key: variant_config[key] for key in CONFIG_KEYS[normalized]}
+    params["objective"] = config.get("objective", "value")
+    return params
 
 
 def save_result(result: dict, out_dir: str | Path) -> Path:

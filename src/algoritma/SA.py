@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 
 from models.model import State
 from models.geometry import is_feasible, overweight_score, validate
+from models.objective import max_score, normalize_objective, output_root_for, state_score
 from models.operators import make_random_neighbor
 
 
@@ -22,9 +23,9 @@ def penalty(state: State) -> float:
     )
 
 
-def objective_function(state: State) -> float:
-    lambda_penalty = sum(p.package.value for p in state.placements) + 1
-    return state.total_value() - lambda_penalty * penalty(state)
+def objective_function(state: State, objective: str = "value") -> float:
+    lambda_penalty = max_score(state, objective) + 1
+    return state_score(state, objective) - lambda_penalty * penalty(state)
 
 
 def schedule(iteration: int, initial_temperature: float, cooling_rate: float) -> float:
@@ -55,11 +56,13 @@ def run(
     max_iter: int = 20000,
     stuck_window: int = 500,
     max_neighbor_tries: int = 50,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     start = time.perf_counter()
 
     current = initial_state
-    current_obj = objective_function(current)
+    current_obj = objective_function(current, objective)
     current_feasible = is_feasible(current)[0]
 
     best_valid_state: Optional[State] = current.copy() if current_feasible else None
@@ -78,7 +81,7 @@ def run(
             break
 
         neighbor, tries = make_valid_neighbor(current, rng, max_neighbor_tries)
-        neighbor_obj = objective_function(neighbor)
+        neighbor_obj = objective_function(neighbor, objective)
         delta_e = neighbor_obj - current_obj
 
         if delta_e > 0:
@@ -94,7 +97,8 @@ def run(
             current_feasible = is_feasible(current)[0]
 
             if current_feasible and (
-                best_valid_state is None or current.total_value() > best_valid_state.total_value()
+                best_valid_state is None
+                or state_score(current, objective) > state_score(best_valid_state, objective)
             ):
                 best_valid_state = current.copy()
 
@@ -133,6 +137,7 @@ def run(
             "max_iter": max_iter,
             "stuck_window": stuck_window,
             "max_neighbor_tries": max_neighbor_tries,
+            "objective": objective,
         },
         "initial_state": initial_state,
         "final_state": current,
@@ -162,7 +167,9 @@ def params_from_config(config: dict) -> dict:
     missing = [k for k in CONFIG_KEYS if k not in section]
     if missing:
         raise KeyError(f"Config simulated_annealing tidak punya key: {missing}")
-    return {k: section[k] for k in CONFIG_KEYS}
+    params = {k: section[k] for k in CONFIG_KEYS}
+    params["objective"] = config.get("objective", "value")
+    return params
 
 
 def save_result(result: dict, out_dir: str | Path) -> Path:
@@ -178,6 +185,7 @@ def save_result(result: dict, out_dir: str | Path) -> Path:
     save_history_csv(out / "history.csv", result["history"])
 
     summary = {
+        "objective": result["params"]["objective"],
         "final_objective": result["final_objective"],
         "duration_s": result["duration_s"],
         "stuck_count": result["extra"]["stuck_count"],
@@ -207,7 +215,8 @@ if __name__ == "__main__":
         result = run(s0, rng, **params)
         out = save_result(
             result,
-            Path("..") / config["output_dir"] / "sa" / dataset / "default" / f"run{k}_seed{seed}",
+            output_root_for(Path("..") / config["output_dir"], params["objective"])
+            / "sa" / dataset / "default" / f"run{k}_seed{seed}",
         )
         print(
             f"run {k} (seed {seed}): value awal {s0.total_value()}"

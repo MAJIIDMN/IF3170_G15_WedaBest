@@ -2,6 +2,7 @@
   "dataset_utama": "data/test_case.json",
   "seeds": [1, 2, 3],
   "output_dir": "output",
+  "objective": "value",
 
   "hill_climbing": {
     "steepest_ascent": {

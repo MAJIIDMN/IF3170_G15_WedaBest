@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 
 from models.model import State, Truck, Package
 from models.geometry import is_feasible, overweight_score, validate
+from models.objective import max_score, normalize_objective, state_score
 from models.operators import make_initial_state, make_random_neighbor
 
 
@@ -21,9 +22,9 @@ def penalty(state: State) -> float:
     )
 
 
-def objective_function(state: State) -> float:
-    lambda_penalty = sum(p.package.value for p in state.placements) + 1
-    return state.total_value() - lambda_penalty * penalty(state)
+def objective_function(state: State, objective: str = "value") -> float:
+    lambda_penalty = max_score(state, objective) + 1
+    return state_score(state, objective) - lambda_penalty * penalty(state)
 
 
 def make_population(
@@ -75,12 +76,12 @@ def best_by_fitness(population: List[State], fitnesses: List[float]) -> State:
     return population[max(range(len(population)), key=lambda i: fitnesses[i])]
 
 
-def best_valid(population: List[State]) -> Optional[State]:
+def best_valid(population: List[State], objective: str = "value") -> Optional[State]:
     champion: Optional[State] = None
     for individual in population:
         if not is_feasible(individual)[0]:
             continue
-        if champion is None or individual.total_value() > champion.total_value():
+        if champion is None or state_score(individual, objective) > state_score(champion, objective):
             champion = individual.copy()
     return champion
 
@@ -95,7 +96,9 @@ def run(
     mutation_rate: float = 0.2,
     elitisme: int = 2,
     mutation_moves: int = 3,
+    objective: str = "value",
 ) -> dict:
+    normalize_objective(objective)
     start = time.perf_counter()
 
     population = make_population(trucks, packages, rng, population_size)
@@ -106,18 +109,21 @@ def run(
     initial_state: Optional[State] = None
 
     for iteration in range(max_iter):
-        fitnesses = [objective_function(ind) for ind in population]
+        fitnesses = [objective_function(ind, objective) for ind in population]
         values = [ind.total_value() if is_feasible(ind)[0] else 0 for ind in population]
 
         generation_best = best_by_fitness(population, fitnesses)
-        if best_individual is None or objective_function(generation_best) > objective_function(best_individual):
+        if best_individual is None or (
+            objective_function(generation_best, objective) > objective_function(best_individual, objective)
+        ):
             best_individual = generation_best.copy()
         if iteration == 0:
             initial_state = generation_best.copy()
 
-        valid_champion = best_valid(population)
+        valid_champion = best_valid(population, objective)
         if valid_champion is not None and (
-            best_valid_state is None or valid_champion.total_value() > best_valid_state.total_value()
+            best_valid_state is None
+            or state_score(valid_champion, objective) > state_score(best_valid_state, objective)
         ):
             best_valid_state = valid_champion.copy()
 
@@ -146,7 +152,7 @@ def run(
         population = next_population
 
     duration = time.perf_counter() - start
-    final_fitnesses = [objective_function(ind) for ind in population]
+    final_fitnesses = [objective_function(ind, objective) for ind in population]
     best_individual = best_by_fitness(population, final_fitnesses).copy()
     if initial_state is None:
         initial_state = best_individual.copy()
@@ -160,11 +166,12 @@ def run(
             "mutation_rate": mutation_rate,
             "elitisme": elitisme,
             "mutation_moves": mutation_moves,
+            "objective": objective,
         },
         "initial_state": initial_state,
         "final_state": best_individual,
         "best_valid_state": best_valid_state,
-        "final_objective": objective_function(best_individual),
+        "final_objective": objective_function(best_individual, objective),
         "best_valid_value": best_valid_state.total_value() if best_valid_state else None,
         "population_size": population_size,
         "iterations": max_iter,
@@ -186,7 +193,9 @@ def params_from_config(config: dict) -> dict:
     missing = [k for k in CONFIG_KEYS if k not in section]
     if missing:
         raise KeyError(f"Config genetic_algorithm tidak punya key: {missing}")
-    return {k: section[k] for k in CONFIG_KEYS}
+    params = {k: section[k] for k in CONFIG_KEYS}
+    params["objective"] = config.get("objective", "value")
+    return params
 
 
 def experiment_matrix(ga_config: dict) -> List[Tuple[str, int, int]]:
@@ -211,6 +220,7 @@ def save_result(result: dict, out_dir: str | Path) -> Path:
     save_history_csv(out / "history.csv", result["history"])
 
     summary = {
+        "objective": result["params"]["objective"],
         "final_objective": result["final_objective"],
         "best_valid_value": result["best_valid_value"],
         "population_size": result["population_size"],
