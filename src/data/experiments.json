@@ -10,11 +10,10 @@
     },
     "sideways": {
       "max_iter": 1000,
-      "max_sideways": 50
+      "max_consecutive_sideways": 50
     },
     "stochastic": {
-      "max_iter": 1000,
-      "max_neighbor_tries": 50
+      "max_iter": 1000
     },
     "random_restart": {
       "max_iter_per_restart": 1000,
@@ -26,7 +25,6 @@
     "initial_temperature": 100.0,
     "cooling_rate": 0.999,
     "min_temperature": 0.01,
-    "probability_threshold": 0.6,
     "max_iter": 20000,
     "stuck_window": 500,
     "max_neighbor_tries": 50
