@@ -202,18 +202,8 @@ class State:
     trucks: List[Truck] = field(default_factory=list)
     placements: List[Placement] = field(default_factory=list)
 
-    @property
-    def truck(self) -> Truck:
-        return self.trucks[0]
-
     def truck_of(self, placement: Placement) -> Truck:
         return self.trucks[placement.truck_idx]
-
-    def get_placement(self, package_id: str) -> Optional[Placement]:
-        for p in self.placements:
-            if p.package.id == package_id:
-                return p
-        return None
 
     def inside_placements(self) -> List[Placement]:
         return [p for p in self.placements if p.is_inside]
@@ -234,7 +224,6 @@ class State:
         return sum(p.package.weight for p in self.placements_on(truck_idx))
 
     def copy(self) -> "State":
-        """Copy placements (package ref tetap shared) dan salin list truk (truk immutable)."""
         return State(
             trucks=list(self.trucks),
             placements=[p.copy() for p in self.placements],
@@ -249,15 +238,3 @@ class State:
             "inside_count": len(self.inside_placements()),
             "outside_count": len(self.outside_placements()),
         }
-
-    @staticmethod
-    def from_packages(trucks: List[Truck], packages: List[Package]) -> "State":
-        if not isinstance(trucks, list):
-            trucks = [trucks]
-        return State(
-            trucks=list(trucks),
-            placements=[Placement(package=p, position=None, orientation_idx=0) for p in packages],
-        )
-
-    def __len__(self) -> int:
-        return len(self.placements)
