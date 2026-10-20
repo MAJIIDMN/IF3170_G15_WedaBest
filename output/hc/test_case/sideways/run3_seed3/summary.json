@@ -13,7 +13,7 @@
   "final_objective": 185,
   "best_valid_value": 185,
   "iterations": 54,
-  "duration_s": 4.712802426001872,
+  "duration_s": 2.051480199996149,
   "termination_reason": "MAX_SIDEWAYS",
   "extra": {
     "sideways_moves": 51,

@@ -58,7 +58,6 @@
   .tname { font: 700 12px system-ui, sans-serif; color: var(--text); }
   #chartWrap { border-top: 1px solid var(--line); background: var(--panel); position: relative; }
   #chart { width: 100%; height: 100%; display: block; }
-  #replayBar { display: none; }
   #drop { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(196,111,18,.08); border: 2px dashed var(--accent); font-size: 16px; z-index: 10; pointer-events: none; }
   #msg { font-size: 12px; color: var(--accent); min-height: 16px; margin-top: 4px; }
   kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 11px; }
@@ -80,49 +79,16 @@
 <div id="app">
   <aside>
     <h1>Packing Viewer 3D</h1>
-    <div class="sub">Local search untuk mengisi peti kemas. Tekan <kbd>Space</kbd> untuk jalan/jeda.</div>
+    <div class="sub">Viewer hasil program Python: dataset, state JSON, dan replay dari <code>export_replay.py</code>. Tekan <kbd>Space</kbd> untuk putar/jeda replay.</div>
 
     <section>
       <h2>Data</h2>
-      <select id="builtin" class="wide">
-        <option value="test_case">test_case.json (bawaan)</option>
-        <option value="multi_truck_case">multi_truck_case.json (bawaan)</option>
-      </select>
       <label class="file">Muat dataset / state / replay (.json)<input type="file" id="fileIn" accept=".json" multiple></label>
       <div class="sub" style="margin:0">Atau seret file JSON ke layar. Untuk state JSON (<code>initial_state.json</code> / <code>final_state.json</code>), muat dataset-nya dulu.</div>
       <div id="msg"></div>
     </section>
 
-    <section id="algoSec">
-      <h2>Algoritma (jalan langsung di browser)</h2>
-      <select id="algo" class="wide">
-        <option value="sa">Simulated Annealing</option>
-        <option value="hc">Hill-Climbing: Steepest Ascent (sampel neighbor)</option>
-        <option value="hcs">Hill-Climbing: Sideways Move (sampel neighbor)</option>
-      </select>
-      <div id="saParams">
-        <label class="row"><span>Suhu awal T₀</span><input type="number" id="p_T0" value="100" step="any"></label>
-        <label class="row"><span>Cooling rate</span><input type="number" id="p_rate" value="0.999" step="0.0001"></label>
-        <label class="row"><span>Suhu minimum</span><input type="number" id="p_Tmin" value="0.01" step="any"></label>
-        <label class="row"><span>Max neighbor tries</span><input type="number" id="p_tries" value="50"></label>
-        <label class="row"><span>Stuck window</span><input type="number" id="p_stuck" value="500"></label>
-      </div>
-      <div id="hcParams" style="display:none">
-        <label class="row"><span>Neighbor per iterasi</span><input type="number" id="p_nb" value="100"></label>
-        <label class="row"><span>Max sideways</span><input type="number" id="p_side" value="50"></label>
-      </div>
-      <label class="row"><span>Max iterasi</span><input type="number" id="p_iter" value="20000"></label>
-      <label class="row"><span>Seed</span><input type="number" id="p_seed" value="1"></label>
-      <div class="btns">
-        <button id="bInit">State awal acak</button>
-        <button id="bRun" class="primary">▶ Jalankan</button>
-        <button id="bStep">Langkah</button>
-      </div>
-      <label class="row"><span>Kecepatan</span><span id="speedLbl" style="color:var(--text)">20 iter/frame</span></label>
-      <input type="range" id="speed" min="0" max="100" value="45">
-    </section>
-
-    <section id="replayBar">
+    <section id="replayBar" style="display:none">
       <h2>Replay hasil Python</h2>
       <div class="sub" id="replayInfo" style="margin-bottom:6px"></div>
       <input type="range" id="scrub" min="0" max="0" value="0">
@@ -132,15 +98,21 @@
         <button id="rNext">▶</button>
         <button id="rExit">Keluar replay</button>
       </div>
+      <label class="row"><span>Kecepatan</span><span id="speedLbl" style="color:var(--text)">20 frame/detik</span></label>
+      <input type="range" id="speed" min="0" max="100" value="45">
     </section>
 
-    <section>
+    <section id="viewSec" style="display:none">
       <h2>Tampilkan</h2>
       <div class="btns">
         <button id="vInit">State awal</button>
         <button id="vCur">Current / akhir</button>
         <button id="vBest">best_valid</button>
       </div>
+    </section>
+
+    <section>
+      <h2>Opsi</h2>
       <label class="row"><span>Label id paket</span><input type="checkbox" id="optLabels" checked></label>
       <label class="row"><span>Tampilkan paket di luar</span><input type="checkbox" id="optOutside" checked></label>
     </section>
@@ -182,41 +154,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-// Dataset bawaan (src/data/)
-const PACKAGES = [
-  { id: "P1", dimensions: { w: 3, l: 3, h: 2 }, value: 50, weight: 20, is_fragile: false, eta: 2 },
-  { id: "P2", dimensions: { w: 2, l: 2, h: 2 }, value: 30, weight: 10, is_fragile: true, eta: 1 },
-  { id: "P3", dimensions: { w: 4, l: 2, h: 1 }, value: 20, weight: 8, is_fragile: false, eta: 3 },
-  { id: "P4", dimensions: { w: 6, l: 3, h: 2 }, value: 70, weight: 40, is_fragile: false, eta: 2 },
-  { id: "P5", dimensions: { w: 2, l: 2, h: 4 }, value: 40, weight: 25, is_fragile: false, eta: 1 },
-  { id: "P6", dimensions: { w: 3, l: 2, h: 2 }, value: 25, weight: 15, is_fragile: true, eta: 4 },
-  { id: "P7", dimensions: { w: 1, l: 1, h: 3 }, value: 10, weight: 3, is_fragile: false, eta: 5 },
-  { id: "P8", dimensions: { w: 4, l: 4, h: 2 }, value: 60, weight: 35, is_fragile: false, eta: 3 },
-];
-const BUILTIN = {
-  test_case: { truck: { dimensions: { w: 6, l: 6, h: 4 }, max_capacity: 100 }, packages: PACKAGES },
-  multi_truck_case: {
-    trucks: [
-      { dimensions: { w: 6, l: 6, h: 4 }, max_capacity: 100 },
-      { dimensions: { w: 5, l: 5, h: 3 }, max_capacity: 80 },
-    ],
-    packages: PACKAGES,
-  },
-};
-
 // Model (port dari models/model.py)
 const ORIENT = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
 const ORIENT_LABEL = ["{w:x, l:y, h:z}","{w:x, l:z, h:y}","{w:y, l:x, h:z}","{w:z, l:x, h:y}","{w:y, l:z, h:x}","{w:z, l:y, h:x}"];
 const TRUCK_GAP = 2;   // jarak antar-truk di gambar
 
 function eff(pkg, ori) { const p = ORIENT[ori]; return [pkg.dims[p[0]], pkg.dims[p[1]], pkg.dims[p[2]]]; }
-function rotateOri(ori, axis) {
-  const p = [...ORIENT[ori]];
-  if (axis === 'x') [p[1], p[2]] = [p[2], p[1]];
-  else if (axis === 'y') [p[0], p[2]] = [p[2], p[0]];
-  else [p[0], p[1]] = [p[1], p[0]];
-  return ORIENT.findIndex(q => q[0] === p[0] && q[1] === p[1] && q[2] === p[2]);
-}
 
 function readDims(raw, def) {
   if (Array.isArray(raw)) return raw.slice(0, 3).map(Number);
@@ -254,21 +197,7 @@ function parseProblem(data) {
 }
 
 // State = array sejajar dengan problem.packages: { pos: [x,y,z] | null, ori, t (indeks truk) }
-const copyState = st => st.map(p => ({ pos: p.pos ? [...p.pos] : null, ori: p.ori, t: p.t }));
-
-// RNG ber-seed
-function makeRng(seed) {
-  let a = (seed >>> 0) || 1;
-  const random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  return {
-    random,
-    randrange: n => Math.floor(random() * n),
-    randint: (lo, hi) => lo + Math.floor(random() * (hi - lo + 1)),
-    choice: arr => arr[Math.floor(random() * arr.length)],
-    shuffle: arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; },
-  };
-}
+const emptyState = prob => prob.packages.map(() => ({ pos: null, ori: 0, t: 0 }));
 
 // Constraint & objective (port dari geometry.py & SA.py)
 function aabb(prob, st, i) {
@@ -336,119 +265,6 @@ function evaluate(prob, st, withMsg = false) {
   return { value, weights, pen, obj: value - lambda * pen, feasible: pen === 0, v };
 }
 
-// Operator neighbor (port dari operators.py)
-function randomPosition(d, T, rng) {
-  if (d[0] > T.W || d[1] > T.L || d[2] > T.H) return null;
-  return [rng.randint(0, T.W - d[0]), rng.randint(0, T.L - d[1]), rng.randint(0, T.H - d[2])];
-}
-function randomNeighbor(prob, st, rng) {
-  const n = st.length, ns = copyState(st);
-  if (n === 0) return ns;
-  const move = rng.choice(['swap', 'relocate', 'rotate']);
-  if (move === 'swap' && n >= 2) {
-    const i = rng.randrange(n); let j = rng.randrange(n - 1); if (j >= i) j++;
-    [ns[i].pos, ns[j].pos] = [ns[j].pos, ns[i].pos];
-    [ns[i].ori, ns[j].ori] = [ns[j].ori, ns[i].ori];
-    [ns[i].t, ns[j].t] = [ns[j].t, ns[i].t];
-  } else if (move === 'relocate') {
-    const i = rng.randrange(n);
-    if (rng.random() < 0.15) ns[i].pos = null;
-    else {
-      const k = rng.randrange(prob.trucks.length);
-      ns[i].t = k;
-      ns[i].pos = randomPosition(eff(prob.packages[i], ns[i].ori), prob.trucks[k], rng);
-    }
-  } else {
-    const i = rng.randrange(n);
-    ns[i].ori = rotateOri(ns[i].ori, rng.choice(['x', 'y', 'z']));
-  }
-  return ns;
-}
-function initialState(prob, rng, attempts = 100) {
-  const n = prob.packages.length;
-  const st = Array.from({ length: n }, () => ({ pos: null, ori: 0, t: 0 }));
-  const order = rng.shuffle([...Array(n).keys()]);
-  for (const i of order) {
-    let placed = false;
-    for (let a = 0; a < attempts; a++) {
-      const ori = rng.randrange(6), k = rng.randrange(prob.trucks.length);
-      const pos = randomPosition(eff(prob.packages[i], ori), prob.trucks[k], rng);
-      if (!pos) continue;
-      st[i] = { pos, ori, t: k };
-      if (evaluate(prob, st).feasible) { placed = true; break; }
-      st[i] = { pos: null, ori: 0, t: 0 };
-    }
-    if (!placed) st[i] = { pos: null, ori: rng.randrange(6), t: 0 };
-  }
-  return st;
-}
-
-// Algoritma
-class SARunner {
-  constructor(prob, init, prm, rng) {
-    Object.assign(this, { prob, prm, rng, kind: 'sa' });
-    this.cur = init; this.curE = evaluate(prob, init);
-    this.best = this.curE.feasible ? copyState(init) : null;
-    this.bestVal = this.curE.feasible ? this.curE.value : null;
-    this.bestObj = this.curE.obj; this.noImp = 0; this.stuck = 0;
-    this.iter = 0; this.done = false; this.reason = ''; this.T = prm.T0;
-  }
-  step() {
-    const { prob, prm, rng } = this;
-    if (this.done) return null;
-    if (this.iter >= prm.maxIter) { this.done = true; this.reason = 'max iterasi'; return null; }
-    const T = prm.T0 * Math.pow(prm.rate, this.iter);
-    if (T < prm.Tmin) { this.done = true; this.reason = 'suhu < minimum'; return null; }
-    this.T = T;
-    let nb, nE, tries;
-    for (tries = 1; tries <= prm.tries; tries++) {
-      nb = randomNeighbor(prob, this.cur, rng); nE = evaluate(prob, nb);
-      if (nE.feasible) break;
-    }
-    const delta = nE.obj - this.curE.obj;
-    const p = Math.exp(delta / T);
-    const accepted = delta > 0 || rng.random() < p;
-    if (accepted) {
-      this.cur = nb; this.curE = nE;
-      if (nE.feasible && (this.bestVal === null || nE.value > this.bestVal)) { this.best = copyState(nb); this.bestVal = nE.value; }
-    }
-    if (this.curE.obj > this.bestObj) { this.bestObj = this.curE.obj; this.noImp = 0; }
-    else if (++this.noImp >= prm.stuck) { this.stuck++; this.noImp = 0; }
-    const rec = { iter: this.iter, T, obj: this.curE.obj, value: this.curE.value, feasible: this.curE.feasible, accepted, p };
-    this.iter++;
-    return rec;
-  }
-}
-
-class HCRunner {
-  constructor(prob, init, prm, rng, sideways) {
-    Object.assign(this, { prob, prm, rng, kind: sideways ? 'hcs' : 'hc', sideways });
-    this.cur = init; this.curE = evaluate(prob, init);
-    this.best = this.curE.feasible ? copyState(init) : null;
-    this.bestVal = this.curE.feasible ? this.curE.value : null;
-    this.iter = 0; this.side = 0; this.done = false; this.reason = ''; this.T = null;
-  }
-  step() {
-    const { prob, prm, rng } = this;
-    if (this.done) return null;
-    if (this.iter >= prm.maxIter) { this.done = true; this.reason = 'max iterasi'; return null; }
-    let bst = null, bstE = null;
-    for (let k = 0; k < prm.nb; k++) {
-      const nb = randomNeighbor(prob, this.cur, rng), e = evaluate(prob, nb);
-      if (!bstE || e.obj > bstE.obj) { bst = nb; bstE = e; }
-    }
-    let accepted = false;
-    if (bstE.obj > this.curE.obj) { accepted = true; this.side = 0; }
-    else if (this.sideways && bstE.obj === this.curE.obj && this.side < prm.side) { accepted = true; this.side++; }
-    if (!accepted) { this.done = true; this.reason = this.sideways && this.side >= prm.side ? 'batas sideways' : 'local optimum'; return null; }
-    this.cur = bst; this.curE = bstE;
-    if (bstE.feasible && (this.bestVal === null || bstE.value > this.bestVal)) { this.best = copyState(bst); this.bestVal = bstE.value; }
-    const rec = { iter: this.iter, T: null, obj: this.curE.obj, value: this.curE.value, feasible: this.curE.feasible, accepted };
-    this.iter++;
-    return rec;
-  }
-}
-
 // Three.js scene
 const BG = 0xf6efdf;
 const view = document.getElementById('view');
@@ -498,7 +314,7 @@ function cssLabel(cls, txt, pos, parent) {
 }
 
 function buildTrucks(prob) {
-  if (truckGroup) { world.remove(truckGroup); truckGroup.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
+  if (truckGroup) { world.remove(truckGroup); truckGroup.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); if (o.isCSS2DObject) o.element.remove(); }); }
   const g = new THREE.Group();
   prob.trucks.forEach((T, k) => {
     const ox = prob.offset[k];
@@ -527,7 +343,7 @@ function buildTrucks(prob) {
 
 let meshes = [];   // per paket: { mesh, edges, label, base, bad, out }
 function buildBoxes(prob) {
-  for (const m of meshes) { world.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose(); m.edges.material.dispose(); }
+  for (const m of meshes) { world.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose(); m.edges.material.dispose(); m.div.remove(); }
   const geo = new THREE.BoxGeometry(1, 1, 1), eg = new THREE.EdgesGeometry(geo);
   meshes = prob.packages.map((p, i) => {
     const mat = new THREE.MeshLambertMaterial({ color: PALETTE[i % PALETTE.length], transparent: true, opacity: 0.95, map: p.fragile ? STRIPES : null });
@@ -627,11 +443,6 @@ renderer.domElement.addEventListener('pointerleave', () => { tip.style.display =
 const chart = document.getElementById('chart'), cg = chart.getContext('2d');
 const series = { pts: [], stride: 1, n: 0 };
 function resetSeries() { series.pts = []; series.stride = 1; series.n = 0; }
-function pushSeries(rec, bestVal) {
-  if (series.n++ % series.stride) return;
-  series.pts.push({ i: rec.iter, v: rec.value, b: bestVal, f: rec.feasible, T: rec.T });
-  if (series.pts.length > 3000) { series.pts = series.pts.filter((_, k) => k % 2 === 0); series.stride *= 2; }
-}
 function drawChart(cursorIter = null) {
   const dpr = devicePixelRatio, w = chart.clientWidth, h = chart.clientHeight;
   if (chart.width !== w * dpr || chart.height !== h * dpr) { chart.width = w * dpr; chart.height = h * dpr; }
@@ -640,7 +451,7 @@ function drawChart(cursorIter = null) {
   const L = 48, R = 48, Tp = 22, B = 22, pw = w - L - R, ph = h - Tp - B;
   cg.font = '11px system-ui'; cg.fillStyle = col('--muted');
   const pts = series.pts;
-  if (pts.length < 2) { cg.fillText('Grafik total value & suhu terhadap iterasi akan muncul saat algoritma berjalan.', L, h / 2); return; }
+  if (pts.length < 2) { cg.fillText('Grafik total value & suhu terhadap iterasi akan muncul saat file replay dimuat.', L, h / 2); return; }
   const maxI = Math.max(pts[pts.length - 1].i, 1), minI = pts[0].i;
   const maxV = Math.max(app.prob ? app.prob.packages.reduce((s, p) => s + p.value, 0) : 1, 1);
   const X = i => L + (i - minI) / Math.max(maxI - minI, 1) * pw, Y = v => Tp + ph - v / maxV * ph;
@@ -671,42 +482,21 @@ function drawChart(cursorIter = null) {
 // App state & UI
 const $ = id => document.getElementById(id);
 const opt = { labels: true, outside: true };
-const app = { prob: null, init: null, runner: null, running: false, shown: null, viewMode: 'cur', replay: null, rIdx: 0, rPlaying: false, dirty: true, lastShown: null };
+const app = { prob: null, view: null, shown: null, replay: null, rIdx: 0, rPlaying: false, rBest: false, dirty: true, lastShown: null };
 
 function msg(t, isErr) { $('msg').textContent = t; $('msg').style.color = isErr ? 'var(--bad)' : 'var(--accent)'; }
-function params() {
-  return { T0: +$('p_T0').value, rate: +$('p_rate').value, Tmin: +$('p_Tmin').value,
-    tries: Math.max(1, +$('p_tries').value), stuck: Math.max(1, +$('p_stuck').value), maxIter: +$('p_iter').value,
-    nb: Math.max(1, +$('p_nb').value), side: +$('p_side').value };
-}
 function speed() { const s = +$('speed').value; return Math.max(1, Math.round(Math.pow(10, s / 100 * 3.3))); }
+function emptyView() { return { st: emptyState(app.prob), label: 'belum ada state; muat state JSON atau replay' }; }
 
 function loadProblem(prob, name) {
-  if (!prob.packages.length) { msg('Dataset tidak punya paket.', true); return; }
-  exitReplay(true);
-  app.prob = prob; app.running = false; app.lastShown = null; setRunBtn();
+  if (!prob.packages.length) { msg('Dataset tidak punya paket.', true); return false; }
+  exitReplay();
+  app.prob = prob; app.lastShown = null;
   buildTrucks(prob); buildBoxes(prob); frameCamera(prob);
   const trucks = prob.trucks.map(T => `${T.W}×${T.L}×${T.H} (kap. ${T.cap})`).join(', ');
   msg(`Dataset ${name}: ${prob.packages.length} paket, ${prob.trucks.length} truk: ${trucks}.`);
-  newInit();
-}
-
-function newInit() {
-  const prob = app.prob, rng = makeRng(+$('p_seed').value);
-  app.init = initialState(prob, rng);
-  app.rng = rng; makeRunner();
-  app.viewMode = 'cur'; app.dirty = true;
-}
-function makeRunner() {
-  const a = $('algo').value, prm = params();
-  app.runner = a === 'sa' ? new SARunner(app.prob, copyState(app.init), prm, app.rng) : new HCRunner(app.prob, copyState(app.init), prm, app.rng, a === 'hcs');
-  resetSeries(); pushSeries({ iter: 0, value: app.runner.curE.value, feasible: app.runner.curE.feasible, T: app.runner.T }, app.runner.bestVal);
-  app.dirty = true;
-}
-
-function setRunBtn() {
-  const done = app.runner?.done;
-  $('bRun').textContent = app.running ? '❚❚ Jeda' : done ? '↺ Ulangi' : '▶ Jalankan';
+  app.view = emptyView(); app.dirty = true;
+  return true;
 }
 
 function currentDisplay() {
@@ -715,10 +505,7 @@ function currentDisplay() {
     const f = app.replay.frames[app.rIdx];
     return { st: f.st, iter: f.iter, T: f.T, label: `replay frame ${app.rIdx + 1}/${app.replay.frames.length}` };
   }
-  const r = app.runner;
-  if (app.viewMode === 'init') return { st: app.init, iter: 0, T: r.kind === 'sa' ? r.prm.T0 : null, label: 'menampilkan state awal' };
-  if (app.viewMode === 'best') return r.best ? { st: r.best, iter: r.iter, T: r.T, label: 'menampilkan best_valid' } : { st: r.cur, iter: r.iter, T: r.T, label: 'belum ada state valid' };
-  return { st: r.cur, iter: r.iter, T: r.T, label: r.done ? `selesai: ${r.reason}` : (app.running ? 'berjalan…' : '') };
+  return { st: app.view.st, iter: null, T: null, label: app.view.label };
 }
 
 function refresh() {
@@ -728,11 +515,11 @@ function refresh() {
   if (d.st !== app.lastShown) { showState(app.prob, d.st, ev); app.lastShown = d.st; }
   app.shown = d.st;
   const fmt = x => Number.isInteger(x) ? x.toLocaleString('id') : x.toLocaleString('id', { maximumFractionDigits: 2 });
-  $('sIter').textContent = fmt(d.iter);
+  $('sIter').textContent = d.iter === null || d.iter === undefined ? '–' : fmt(d.iter);
   $('sT').textContent = d.T === null || d.T === undefined ? '–' : d.T < 1 ? d.T.toFixed(4) : d.T.toFixed(2);
   $('sVal').textContent = fmt(ev.value);
   $('sObj').textContent = fmt(ev.obj);
-  const bv = app.replay ? app.replay.bestVal : app.runner.bestVal;
+  const bv = app.replay ? app.replay.bestVal : null;
   $('sBest').textContent = bv === null || bv === undefined ? '–' : fmt(bv);
   const inside = d.st.filter(p => p.pos).length;
   $('sIn').textContent = `${inside} / ${d.st.length}`;
@@ -749,55 +536,22 @@ function refresh() {
   $('outsideList').textContent = outs.length ? outs.join(', ') : '–';
   $('hud').innerHTML = `<b>${inside}</b> paket di dalam · <b>${outs.length}</b> di luar · value <b>${fmt(ev.value)}</b>`;
   drawChart(app.replay ? d.iter : null);
-  setRunBtn();
 }
 
-// Tombol algoritma
-$('algo').addEventListener('change', () => {
-  const sa = $('algo').value === 'sa';
-  $('saParams').style.display = sa ? '' : 'none'; $('hcParams').style.display = sa ? 'none' : '';
-  $('p_iter').value = sa ? 20000 : 1000;
-  if (app.prob) { app.running = false; makeRunner(); }
-});
-$('bInit').onclick = () => { if (!app.prob) return; app.running = false; newInit(); };
-$('bRun').onclick = toggleRun;
-$('bStep').onclick = () => { if (!app.runner) return; app.running = false; app.viewMode = 'cur'; stepRunner(1); app.dirty = true; };
-function toggleRun() {
-  if (app.replay) { app.rBest = false; app.rPlaying = !app.rPlaying; $('rPlay').textContent = app.rPlaying ? '❚❚ Jeda' : '▶ Putar'; return; }
-  if (!app.runner) return;
-  if (app.runner.done) { makeRunner(); app.running = true; }
-  else app.running = !app.running;
-  app.viewMode = 'cur'; app.dirty = true;
-}
-function stepRunner(n) {
-  const r = app.runner, t0 = performance.now();
-  for (let k = 0; k < n; k++) {
-    const rec = r.step();
-    if (!rec) { app.running = false; break; }
-    pushSeries(rec, r.bestVal);
-    if (performance.now() - t0 > 14) break;
-  }
-}
-$('speed').addEventListener('input', () => { $('speedLbl').textContent = app.replay ? `${speed()} frame/detik` : `${speed()} iter/frame`; });
-for (const id of ['p_T0', 'p_rate', 'p_Tmin', 'p_tries', 'p_stuck', 'p_iter', 'p_nb', 'p_side']) $(id).addEventListener('change', () => { if (app.runner) { Object.assign(app.runner.prm, params()); } });
-$('p_seed').addEventListener('change', () => { if (app.prob) { app.running = false; newInit(); } });
-
-$('vInit').onclick = () => { if (app.replay) { app.rIdx = 0; syncScrub(); } else app.viewMode = 'init'; app.dirty = true; };
-$('vCur').onclick = () => { if (app.replay) { app.rIdx = app.replay.frames.length - 1; syncScrub(); } else app.viewMode = 'cur'; app.dirty = true; };
-$('vBest').onclick = () => {
-  if (app.replay) { app.rBest = true; app.lastShown = null; app.dirty = true; return; }
-  app.viewMode = 'best'; app.dirty = true;
-};
+$('vInit').onclick = () => { if (!app.replay) return; app.rIdx = 0; syncScrub(); app.dirty = true; };
+$('vCur').onclick = () => { if (!app.replay) return; app.rIdx = app.replay.frames.length - 1; syncScrub(); app.dirty = true; };
+$('vBest').onclick = () => { if (!app.replay) return; app.rBest = true; app.lastShown = null; app.dirty = true; };
 $('optLabels').onchange = e => { opt.labels = e.target.checked; applyLook(); };
 $('optOutside').onchange = e => { opt.outside = e.target.checked; applyLook(); };
+$('speed').addEventListener('input', () => { $('speedLbl').textContent = `${speed()} frame/detik`; });
 
 // Replay
 const FRAME_INFO = { sa: 'tiap move yang diterima', ga: 'individu terbaik tiap generasi', hc: 'tiap kali current berganti' };
 function startReplay(data) {
   const prob = parseProblem(data.dataset);
-  loadProblem(prob, data.dataset_name || 'replay');
+  if (!loadProblem(prob, data.dataset_name || 'replay')) return;
   const idx = new Map(prob.packages.map((p, i) => [p.id, i]));
-  const toSt = pl => { const st = prob.packages.map(() => ({ pos: null, ori: 0, t: 0 }));
+  const toSt = pl => { const st = emptyState(prob);
     for (const [id, v] of Object.entries(pl)) { const i = idx.get(id); if (i === undefined) continue; st[i] = v ? { pos: [v[0], v[1], v[2]], ori: v[3], t: v[4] ?? 0 } : { pos: null, ori: 0, t: 0 }; }
     return st; };
   const prm = data.params || {};
@@ -813,41 +567,49 @@ function startReplay(data) {
   let best = null;
   for (const h of data.history || []) { if (h.feasible && (best === null || h.value > best)) best = h.value;
     series.pts.push({ i: h.iter, v: h.value, b: best, f: h.feasible, T: h.temperature ?? null }); }
-  app.rIdx = 0; app.rPlaying = false;
-  $('replayBar').style.display = ''; $('algoSec').style.display = 'none';
+  app.rIdx = 0; app.rPlaying = false; app.rBest = false;
+  $('replayBar').style.display = ''; $('viewSec').style.display = '';
   const name = algo.toUpperCase() + (data.variant ? ` ${data.variant}` : '');
   $('replayInfo').textContent = `${name} · seed ${data.seed ?? '?'} · ${data.iterations ?? '?'} iterasi · ${app.replay.frames.length} frame (${FRAME_INFO[algo] ?? ''})`;
   $('scrub').max = app.replay.frames.length - 1; syncScrub();
-  $('speedLbl').textContent = `${speed()} frame/detik`;
   msg(`Replay dimuat: ${data.dataset_name || ''}`);
-  app.dirty = true;
+  app.lastShown = null; app.dirty = true;
 }
 function syncScrub() { $('scrub').value = app.rIdx; app.rBest = false; }
-function exitReplay(silent) {
+function toggleReplay() {
   if (!app.replay) return;
-  app.replay = null; app.rPlaying = false;
-  $('replayBar').style.display = 'none'; $('algoSec').style.display = '';
-  $('speedLbl').textContent = `${speed()} iter/frame`;
-  if (!silent && app.prob) { newInit(); }
+  app.rBest = false; app.rPlaying = !app.rPlaying;
+  if (app.rPlaying && app.rIdx >= app.replay.frames.length - 1) { app.rIdx = 0; syncScrub(); app.dirty = true; }
+  $('rPlay').textContent = app.rPlaying ? '❚❚ Jeda' : '▶ Putar';
+}
+function exitReplay() {
+  if (!app.replay) return;
+  app.replay = null; app.rPlaying = false; $('rPlay').textContent = '▶ Putar';
+  $('replayBar').style.display = 'none'; $('viewSec').style.display = 'none';
+  resetSeries();
+  if (app.prob) app.view = emptyView();
+  app.lastShown = null; app.dirty = true;
 }
 $('scrub').oninput = e => { app.rIdx = +e.target.value; app.rBest = false; app.dirty = true; };
-$('rPlay').onclick = toggleRun;
+$('rPlay').onclick = toggleReplay;
 $('rPrev').onclick = () => { app.rIdx = Math.max(0, app.rIdx - 1); syncScrub(); app.dirty = true; };
 $('rNext').onclick = () => { app.rIdx = Math.min(app.replay.frames.length - 1, app.rIdx + 1); syncScrub(); app.dirty = true; };
-$('rExit').onclick = () => exitReplay(false);
+$('rExit').onclick = () => exitReplay();
 
 // Muat file
 function loadStateJson(data, name) {
   if (!app.prob) { msg('Muat dataset dulu sebelum state JSON.', true); return; }
+  exitReplay();
   const idx = new Map(app.prob.packages.map((p, i) => [p.id, i]));
-  const st = app.prob.packages.map(() => ({ pos: null, ori: 0, t: 0 }));
+  const st = emptyState(app.prob);
   let miss = 0;
   for (const e of data.placements) {
     const i = idx.get(e.package_id ?? e.id); if (i === undefined) { miss++; continue; }
     st[i] = { pos: e.position ? e.position.map(Number) : null, ori: +(e.orientation_idx ?? 0), t: +(e.truck_idx ?? 0) };
   }
-  app.running = false; app.init = st; app.rng = makeRng(+$('p_seed').value); makeRunner(); app.viewMode = 'cur';
-  msg(`State ${name} dimuat` + (miss ? ` (${miss} id tidak cocok dengan dataset!)` : '') + '. Algoritma bisa dilanjutkan dari state ini.', miss > 0);
+  app.view = { st, label: `menampilkan ${name}` };
+  app.lastShown = null; app.dirty = true;
+  msg(`State ${name} dimuat` + (miss ? ` (${miss} id tidak cocok dengan dataset!)` : '') + '.', miss > 0);
 }
 async function handleFiles(files) {
   const list = [...files].map(f => ({ f, kind: null, data: null }));
@@ -859,23 +621,17 @@ async function handleFiles(files) {
   list.sort((a, b) => (a.kind === 'dataset' ? 0 : 1) - (b.kind === 'dataset' ? 0 : 1));
   for (const it of list) {
     if (it.kind === 'replay') startReplay(it.data);
-    else if (it.kind === 'dataset') { loadProblem(parseProblem(it.data), it.f.name); addBuiltin(it.f.name, it.data); }
+    else if (it.kind === 'dataset') loadProblem(parseProblem(it.data), it.f.name);
     else loadStateJson(it.data, it.f.name);
   }
 }
-function addBuiltin(name, data) {
-  BUILTIN[name] = data;
-  if (![...$('builtin').options].some(o => o.value === name)) $('builtin').add(new Option(name, name));
-  $('builtin').value = name;
-}
 $('fileIn').onchange = e => { handleFiles(e.target.files); e.target.value = ''; };
-$('builtin').onchange = e => loadProblem(parseProblem(BUILTIN[e.target.value]), e.target.value);
 let dragDepth = 0;
 addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('drop').style.display = 'flex'; });
 addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('drop').style.display = 'none'; } });
 addEventListener('dragover', e => e.preventDefault());
 addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; $('drop').style.display = 'none'; handleFiles(e.dataTransfer.files); });
-addEventListener('keydown', e => { if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) { e.preventDefault(); toggleRun(); } });
+addEventListener('keydown', e => { if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) { e.preventDefault(); toggleReplay(); } });
 
 // Loop
 function resize() {
@@ -889,7 +645,6 @@ new ResizeObserver(() => drawChart(app.replay ? currentDisplay().iter : null)).o
 let lastReplayTick = 0, lastUi = 0;
 function animate(now) {
   requestAnimationFrame(animate);
-  if (app.running && app.runner) { stepRunner(speed()); app.dirty = true; }
   if (app.replay && app.rPlaying && now - lastReplayTick > 1000 / speed()) {
     lastReplayTick = now;
     if (app.rIdx < app.replay.frames.length - 1) { app.rIdx++; syncScrub(); app.dirty = true; }
@@ -900,8 +655,7 @@ function animate(now) {
   labelRenderer.render(scene, camera);
 }
 
-$('speedLbl').textContent = `${speed()} iter/frame`;
-loadProblem(parseProblem(BUILTIN.test_case), 'test_case.json');
+$('speedLbl').textContent = `${speed()} frame/detik`;
 requestAnimationFrame(animate);
 </script>
 </body>

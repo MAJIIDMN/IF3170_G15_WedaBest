@@ -5,7 +5,7 @@
   "final_value": 200,
   "best_valid_value": 205,
   "iterations": 9206,
-  "duration_s": 4.382603550009662,
+  "duration_s": 2.7552339999965625,
   "stuck_count": 18,
   "stuck_window": 500,
   "stuck_rate": 1.955246578318488,

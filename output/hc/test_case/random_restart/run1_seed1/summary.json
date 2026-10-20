@@ -13,7 +13,7 @@
   "final_objective": 205,
   "best_valid_value": 205,
   "iterations": 12,
-  "duration_s": 1.5278862270060927,
+  "duration_s": 0.6163623999964329,
   "termination_reason": "MAX_RESTARTS",
   "extra": {
     "restart_count": 10,
@@ -36,7 +36,7 @@
       "final_value": 205,
       "iterations": 1,
       "termination_reason": "LOCAL_OPTIMUM",
-      "duration_s": 0.07562061499629635
+      "duration_s": 0.027902900001208764
     },
     "restart_summaries": [
       {
@@ -45,7 +45,7 @@
         "final_value": 205,
         "iterations": 2,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.185465059003036
+        "duration_s": 0.07495780000317609
       },
       {
         "restart": 2,
@@ -53,7 +53,7 @@
         "final_value": 155,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.08500551899487618
+        "duration_s": 0.033844500001578126
       },
       {
         "restart": 3,
@@ -61,7 +61,7 @@
         "final_value": 185,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.07319322500552516
+        "duration_s": 0.030182299997250084
       },
       {
         "restart": 4,
@@ -69,7 +69,7 @@
         "final_value": 190,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.07805674999690382
+        "duration_s": 0.030280200000561308
       },
       {
         "restart": 5,
@@ -77,7 +77,7 @@
         "final_value": 195,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.08344593200308736
+        "duration_s": 0.03263080000033369
       },
       {
         "restart": 6,
@@ -85,7 +85,7 @@
         "final_value": 190,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.08131211799627636
+        "duration_s": 0.027788200000941288
       },
       {
         "restart": 7,
@@ -93,7 +93,7 @@
         "final_value": 180,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.06712362500547897
+        "duration_s": 0.028434400002879556
       },
       {
         "restart": 8,
@@ -101,7 +101,7 @@
         "final_value": 200,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.09912020699994173
+        "duration_s": 0.04211570000188658
       },
       {
         "restart": 9,
@@ -109,7 +109,7 @@
         "final_value": 175,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.07000325200351654
+        "duration_s": 0.028131899998697918
       },
       {
         "restart": 10,
@@ -117,7 +117,7 @@
         "final_value": 185,
         "iterations": 1,
         "termination_reason": "LOCAL_OPTIMUM",
-        "duration_s": 0.07888407899736194
+        "duration_s": 0.0409734999993816
       }
     ]
   }

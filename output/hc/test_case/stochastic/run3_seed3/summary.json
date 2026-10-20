@@ -12,7 +12,7 @@
   "final_objective": 150,
   "best_valid_value": 150,
   "iterations": 2,
-  "duration_s": 0.12982805399951758,
+  "duration_s": 0.051431700005196035,
   "termination_reason": "LOCAL_OPTIMUM",
   "extra": {
     "accepted_moves": 1

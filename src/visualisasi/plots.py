@@ -72,6 +72,8 @@ def _title(algorithm: str, summary: dict, run_dir: Path) -> str:
     return f"{name}\n{' | '.join(info)}"
 
 
+# plot objective
+
 def plot_objective(history: List[dict], algorithm: str, path: Path, title: str = "") -> None:
     if algorithm == "ga":
         _plot_objective_ga(history, path, title)
@@ -149,6 +151,8 @@ def plot_accept_prob(history: List[dict], path: Path, title: str = "") -> None:
     plt.close(fig)
 
 
+#  gambar state 3D
+
 def draw_state(state: State, path: Path, title: str = "") -> None:
     n_trucks = len(state.trucks)
     color_of = {p.package.id: CMAP(i % 20) for i, p in enumerate(state.placements)}
@@ -194,8 +198,9 @@ def draw_state(state: State, path: Path, title: str = "") -> None:
     plt.close(fig)
 
 
+# satu folder run
+
 def guess_dataset(run_dir: Path) -> Optional[Path]:
-    # output[/objective_eta]/<algo>/<dataset>/... -> src/data/<dataset>.json
     parts = run_dir.resolve().parts
     for i, part in enumerate(parts[:-1]):
         if part in ALGO_NAMES:

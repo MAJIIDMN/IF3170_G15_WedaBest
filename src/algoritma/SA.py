@@ -11,6 +11,11 @@ from models.geometry import is_feasible, overweight_score, validate
 from models.objective import max_score, normalize_objective, output_root_for, state_score
 from models.operators import make_random_neighbor
 
+STUCK_DEFINITION = (
+    "Satu kejadian stuck = stuck_window iterasi berturut-turut tanpa perbaikan objective terbaik "
+    "(objective dengan penalti). Definisi ini tidak dikaitkan dengan local optimum."
+)
+
 
 def penalty(state: State) -> float:
     violations = validate(state)
