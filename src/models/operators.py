@@ -101,26 +101,6 @@ def make_random_neighbor(state: State, rng: random.Random) -> State:
         return rotate_random(state, idx, rng)
 
 
-def make_neighbors(
-    state: State,
-    rng: random.Random,
-    count: int = 20,
-    feasible_only: bool = False,
-    max_tries: int = 200,
-) -> List[State]:
-    neighbors: List[State] = []
-    tries = 0
-    while len(neighbors) < count and tries < max_tries * count:
-        cand = make_random_neighbor(state, rng)
-        tries += 1
-        if feasible_only:
-            feas, _ = is_feasible(cand)
-            if not feas:
-                continue
-        neighbors.append(cand)
-    return neighbors
-
-
 def state_signature(state: State) -> Tuple[tuple, ...]:
     return tuple(sorted(
         (
@@ -134,11 +114,8 @@ def state_signature(state: State) -> Tuple[tuple, ...]:
 
 
 def iter_all_feasible_neighbors(state: State) -> Iterator[State]:
-    # Membangkitkan seluruh successor feasible dari satu operasi yang diizinkan.
-    # Operasinya adalah menukar dua paket, memindahkan satu paket ke
-    # koordinat integer lain (termasuk ke luar truk), dan merotasi satu paket
-    # 90 derajat terhadap sumbu x/y/z. State duplikat dan state asal tidak
-    # dikembalikan.
+    # Successor feasible: swap, relocate (termasuk ke luar truk), dan rotate 90°.
+    # Hasil duplikat dan state asal tidak dikembalikan.
 
     seen = {state_signature(state)}
 
@@ -187,11 +164,6 @@ def iter_all_feasible_neighbors(state: State) -> Iterator[State]:
                 yield candidate
 
 
-def make_all_feasible_neighbors(state: State) -> List[State]:
-    """Versi list dari iter_all_feasible_neighbors untuk pemanggil yang membutuhkannya."""
-    return list(iter_all_feasible_neighbors(state))
-
-
 def make_initial_state(
     trucks: List[Truck],
     packages: List[Package],
@@ -235,24 +207,3 @@ def make_initial_state(
             state.placements.append(placed)
     return state
 
-
-def make_random_infeasible_state(
-    trucks: List[Truck],
-    packages: List[Package],
-    rng: Optional[random.Random] = None,
-) -> State:
-    if not isinstance(trucks, list):
-        trucks = [trucks]
-    if rng is None:
-        rng = random.Random()
-    placements: List[Placement] = []
-    for pkg in packages:
-        ori = rng.randrange(6)
-        truck_idx = rng.randrange(len(trucks))
-        dims = get_effective_dimensions(pkg.dimensions, ori)
-        if rng.random() < 0.5:
-            pos = random_position(dims, trucks[truck_idx], rng)
-        else:
-            pos = None
-        placements.append(Placement(package=pkg, position=pos, orientation_idx=ori, truck_idx=truck_idx))
-    return State(trucks=trucks, placements=placements)

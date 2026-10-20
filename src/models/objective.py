@@ -5,10 +5,8 @@ from typing import Iterable
 
 from .model import Package, State
 
-# "value": OF utama dari spesifikasi, total value paket di dalam truk.
-# "eta"  : OF bonus, value tiap paket diberi bobot urgensi (1 + 1/eta), jadi paket
-#          yang harus cepat sampai (eta kecil) lebih diutamakan. Tidak menambah
-#          variabel baru, hanya memakai atribut eta yang sudah ada di dataset.
+# "value": total value paket di dalam truk.
+# "eta": value x (1 + 1/eta), paket ber-ETA kecil diutamakan.
 OBJECTIVES = ("value", "eta")
 
 
@@ -36,19 +34,16 @@ def _total(packages: Iterable[Package], objective: str) -> float:
 
 
 def state_score(state: State, objective: str = "value") -> float:
-    """Nilai yang dimaksimalkan (tanpa penalti) dari paket-paket di dalam truk."""
     if objective == "value":
         return state.total_value()
     return _total((p.package for p in state.inside_placements()), objective)
 
 
 def max_score(state: State, objective: str = "value") -> float:
-    """Batas atas state_score: semua paket masuk. Dipakai untuk lambda penalti."""
     return _total((p.package for p in state.placements), objective)
 
 
 def output_root_for(output_root: Path, objective: str = "value") -> Path:
-    """Hasil run dengan OF bonus disimpan terpisah supaya tidak menimpa hasil OF utama."""
     if objective == "value":
         return Path(output_root)
     return Path(output_root) / f"objective_{objective}"
