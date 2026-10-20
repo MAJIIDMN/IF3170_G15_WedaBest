@@ -1,0 +1,10 @@
+{
+  "algorithm": "sa",
+  "objective": "value",
+  "final_objective": 100.0,
+  "final_value": 100,
+  "best_valid_value": 100,
+  "iterations": 9206,
+  "duration_s": 1.2721252670016838,
+  "stuck_count": 18
+}

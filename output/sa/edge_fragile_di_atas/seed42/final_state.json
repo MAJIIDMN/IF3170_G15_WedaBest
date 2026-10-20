@@ -1,0 +1,69 @@
+{
+  "trucks": [
+    {
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 6
+      },
+      "max_capacity": 100
+    }
+  ],
+  "placements": [
+    {
+      "package_id": "N2",
+      "position": [
+        0,
+        0,
+        2
+      ],
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
+      "truck_idx": 0,
+      "effective_dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "N1",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "orientation_idx": 1,
+      "orientation_label": "{w:x, l:z, h:y}",
+      "truck_idx": 0,
+      "effective_dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": true
+    },
+    {
+      "package_id": "F1",
+      "position": [
+        0,
+        0,
+        4
+      ],
+      "orientation_idx": 1,
+      "orientation_label": "{w:x, l:z, h:y}",
+      "truck_idx": 0,
+      "effective_dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "is_inside": true
+    }
+  ],
+  "total_value": 100,
+  "total_weight": 30,
+  "inside_count": 3,
+  "outside_count": 0
+}

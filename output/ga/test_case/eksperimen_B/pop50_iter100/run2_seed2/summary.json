@@ -1,7 +1,10 @@
 {
+  "algorithm": "ga",
+  "objective": "value",
   "final_objective": 205.0,
+  "final_value": 205,
   "best_valid_value": 205,
   "population_size": 50,
   "iterations": 100,
-  "duration_s": 5.3168629389983835
+  "duration_s": 4.782602361003228
 }

@@ -12,16 +12,20 @@
   "placements": [
     {
       "package_id": "P1",
-      "position": null,
-      "orientation_idx": 0,
-      "orientation_label": "{w:x, l:y, h:z}",
+      "position": [
+        3,
+        1,
+        0
+      ],
+      "orientation_idx": 4,
+      "orientation_label": "{w:y, l:z, h:x}",
       "truck_idx": 0,
       "effective_dimensions": {
-        "w": 3,
+        "w": 2,
         "l": 3,
-        "h": 2
+        "h": 3
       },
-      "is_inside": false
+      "is_inside": true
     },
     {
       "package_id": "P6",
@@ -38,20 +42,16 @@
     },
     {
       "package_id": "P8",
-      "position": [
-        3,
-        1,
-        0
-      ],
-      "orientation_idx": 4,
-      "orientation_label": "{w:y, l:z, h:x}",
+      "position": null,
+      "orientation_idx": 0,
+      "orientation_label": "{w:x, l:y, h:z}",
       "truck_idx": 0,
       "effective_dimensions": {
-        "w": 2,
+        "w": 4,
         "l": 4,
-        "h": 4
+        "h": 2
       },
-      "is_inside": true
+      "is_inside": false
     },
     {
       "package_id": "P3",
@@ -73,12 +73,12 @@
     {
       "package_id": "P2",
       "position": [
+        0,
         1,
-        4,
         0
       ],
-      "orientation_idx": 5,
-      "orientation_label": "{w:z, l:y, h:x}",
+      "orientation_idx": 2,
+      "orientation_label": "{w:y, l:x, h:z}",
       "truck_idx": 0,
       "effective_dimensions": {
         "w": 2,
@@ -107,17 +107,17 @@
     {
       "package_id": "P5",
       "position": [
-        0,
         1,
+        4,
         0
       ],
-      "orientation_idx": 2,
-      "orientation_label": "{w:y, l:x, h:z}",
+      "orientation_idx": 5,
+      "orientation_label": "{w:z, l:y, h:x}",
       "truck_idx": 0,
       "effective_dimensions": {
-        "w": 2,
+        "w": 4,
         "l": 2,
-        "h": 4
+        "h": 2
       },
       "is_inside": true
     },
@@ -135,8 +135,8 @@
       "is_inside": false
     }
   ],
-  "total_value": 160,
-  "total_weight": 81,
+  "total_value": 150,
+  "total_weight": 66,
   "inside_count": 5,
   "outside_count": 3
 }

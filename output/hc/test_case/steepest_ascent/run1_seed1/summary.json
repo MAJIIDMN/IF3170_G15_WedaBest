@@ -3,14 +3,16 @@
   "variant": "steepest_ascent",
   "seed": 1,
   "params": {
-    "max_iter": 1000
+    "max_iter": 1000,
+    "objective": "value"
   },
+  "objective": "value",
   "initial_value": 205,
   "final_value": 205,
   "final_objective": 205,
   "best_valid_value": 205,
   "iterations": 1,
-  "duration_s": 0.03156669999589212,
+  "duration_s": 0.09328180100419559,
   "termination_reason": "LOCAL_OPTIMUM",
   "extra": {}
 }

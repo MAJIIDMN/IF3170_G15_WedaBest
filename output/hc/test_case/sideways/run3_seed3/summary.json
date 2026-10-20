@@ -4,14 +4,16 @@
   "seed": 3,
   "params": {
     "max_iter": 1000,
-    "max_sideways": 50
+    "max_consecutive_sideways": 50,
+    "objective": "value"
   },
+  "objective": "value",
   "initial_value": 135,
   "final_value": 185,
   "final_objective": 185,
   "best_valid_value": 185,
   "iterations": 54,
-  "duration_s": 1.10119819999818,
+  "duration_s": 4.712802426001872,
   "termination_reason": "MAX_SIDEWAYS",
   "extra": {
     "sideways_moves": 51,

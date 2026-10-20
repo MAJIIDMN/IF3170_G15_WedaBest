@@ -1,6 +1,13 @@
 {
+  "algorithm": "sa",
   "objective": "value",
   "final_objective": 200.0,
-  "duration_s": 2.9941996000125073,
-  "stuck_count": 18
+  "final_value": 200,
+  "best_valid_value": 205,
+  "iterations": 9206,
+  "duration_s": 4.382603550009662,
+  "stuck_count": 18,
+  "stuck_window": 500,
+  "stuck_rate": 1.955246578318488,
+  "stuck_definition": "Satu kejadian stuck = stuck_window iterasi berturut-turut tanpa perbaikan objective terbaik (objective dengan penalti). Definisi ini tidak dikaitkan dengan local optimum."
 }

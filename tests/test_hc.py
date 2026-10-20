@@ -51,20 +51,20 @@ class HillClimbingTests(unittest.TestCase):
             only_package_state,
             random.Random(2),
             max_iter=10,
-            max_sideways=2,
+            max_consecutive_sideways=2,
         )
 
         self.assertEqual(result["termination_reason"], "MAX_SIDEWAYS")
         self.assertEqual(result["extra"]["sideways_moves"], 2)
 
-    def test_stochastic_never_accepts_non_improving_candidate(self) -> None:
+    def test_stochastic_stops_at_local_optimum_and_only_moves_uphill(self) -> None:
         result = HC.run_stochastic(
             self.state,
             random.Random(3),
             max_iter=50,
-            max_neighbor_tries=50,
         )
 
+        self.assertEqual(result["termination_reason"], "LOCAL_OPTIMUM")
         previous_value = result["history"][0]["value"]
         for row in result["history"][1:]:
             if row["accepted"]:
@@ -81,10 +81,11 @@ class HillClimbingTests(unittest.TestCase):
 
         self.assertEqual(result["termination_reason"], "MAX_RESTARTS")
         self.assertEqual(result["extra"]["restart_count"], 2)
-        self.assertEqual(len(result["extra"]["iterations_per_restart"]), 3)
+        self.assertEqual(len(result["extra"]["iterations_per_restart"]), 2)
         self.assertEqual(
             result["iterations"],
-            sum(result["extra"]["iterations_per_restart"]),
+            result["extra"]["initial_search"]["iterations"]
+            + sum(result["extra"]["iterations_per_restart"]),
         )
 
 

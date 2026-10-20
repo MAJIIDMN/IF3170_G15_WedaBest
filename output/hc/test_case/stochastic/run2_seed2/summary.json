@@ -4,17 +4,17 @@
   "seed": 2,
   "params": {
     "max_iter": 1000,
-    "max_neighbor_tries": 50
+    "objective": "value"
   },
+  "objective": "value",
   "initial_value": 165,
   "final_value": 190,
   "final_objective": 190,
   "best_valid_value": 190,
-  "iterations": 1000,
-  "duration_s": 0.10086939999746392,
-  "termination_reason": "MAX_ITERATIONS",
+  "iterations": 3,
+  "duration_s": 0.18328632499469677,
+  "termination_reason": "LOCAL_OPTIMUM",
   "extra": {
-    "accepted_moves": 1,
-    "rejected_moves": 999
+    "accepted_moves": 2
   }
 }
