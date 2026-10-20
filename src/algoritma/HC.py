@@ -12,8 +12,6 @@ from models.objective import normalize_objective, state_score
 from models.operators import (
     iter_all_feasible_neighbors,
     make_initial_state,
-    make_random_neighbor,
-    state_signature,
 )
 
 
@@ -26,8 +24,8 @@ VARIANTS = (
 
 CONFIG_KEYS = {
     "steepest_ascent": ("max_iter",),
-    "sideways": ("max_iter", "max_sideways"),
-    "stochastic": ("max_iter", "max_neighbor_tries"),
+    "sideways": ("max_iter", "max_consecutive_sideways"),
+    "stochastic": ("max_iter",),
     "random_restart": ("max_iter_per_restart", "max_restart"),
 }
 
@@ -72,21 +70,6 @@ def _best_feasible_neighbor(
                 best = neighbor
 
     return best, best_value, neighbor_count
-
-
-def _random_feasible_neighbor(
-    state: State,
-    rng: random.Random,
-    max_tries: int,
-) -> Tuple[Optional[State], int]:
-    current_signature = state_signature(state)
-    for tries in range(1, max_tries + 1):
-        candidate = make_random_neighbor(state, rng)
-        if state_signature(candidate) == current_signature:
-            continue
-        if is_feasible(candidate)[0]:
-            return candidate, tries
-    return None, max_tries
 
 
 def _result(
@@ -183,12 +166,12 @@ def run_sideways(
     initial_state: State,
     rng: random.Random,
     max_iter: int = 1000,
-    max_sideways: int = 50,
+    max_consecutive_sideways: int = 50,
     objective: str = "value",
 ) -> dict:
     normalize_objective(objective)
     _require_nonnegative("max_iter", max_iter)
-    _require_nonnegative("max_sideways", max_sideways)
+    _require_nonnegative("max_consecutive_sideways", max_consecutive_sideways)
     _require_feasible_initial_state(initial_state)
     start = time.perf_counter()
     current = initial_state.copy()
@@ -221,7 +204,7 @@ def run_sideways(
             current_value = neighbor_value
             consecutive_sideways = 0
             accepted = True
-        elif neighbor_value == current_value and consecutive_sideways < max_sideways:
+        elif neighbor_value == current_value and consecutive_sideways < max_consecutive_sideways:
             current = neighbor
             consecutive_sideways += 1
             total_sideways += 1
@@ -245,14 +228,14 @@ def run_sideways(
 
         if neighbor is None or not accepted:
             break
-        if was_sideways and consecutive_sideways >= max_sideways:
+        if was_sideways and consecutive_sideways >= max_consecutive_sideways:
             termination_reason = "MAX_SIDEWAYS"
             break
 
     duration = time.perf_counter() - start
     return _result(
         "sideways",
-        {"max_iter": max_iter, "max_sideways": max_sideways, "objective": objective},
+        {"max_iter": max_iter, "max_consecutive_sideways": max_consecutive_sideways, "objective": objective},
         initial_state,
         current,
         iterations,
@@ -270,77 +253,77 @@ def run_stochastic(
     initial_state: State,
     rng: random.Random,
     max_iter: int = 1000,
-    max_neighbor_tries: int = 50,
     objective: str = "value",
 ) -> dict:
+    # AIMA 4.1.1: pilih acak dari uphill moves, berhenti saat tidak ada uphill move.
+    # max_iter hanya batas aman.
     normalize_objective(objective)
     _require_nonnegative("max_iter", max_iter)
-    if max_neighbor_tries <= 0:
-        raise ValueError(
-            f"max_neighbor_tries harus lebih besar dari 0, dapat {max_neighbor_tries}"
-        )
     _require_feasible_initial_state(initial_state)
     start = time.perf_counter()
     current = initial_state.copy()
     current_value = state_score(current, objective)
     accepted_moves = 0
-    rejected_moves = 0
     history: List[dict] = [{
         "iter": 0,
         "objective": current_value,
         "value": current.total_value(),
         "candidate_value": None,
         "accepted": False,
-        "neighbor_tries": 0,
+        "neighbors_evaluated": 0,
+        "uphill_count": 0,
     }]
 
     iterations = 0
     termination_reason = "MAX_ITERATIONS"
     for iteration in range(1, max_iter + 1):
-        neighbor, tries = _random_feasible_neighbor(current, rng, max_neighbor_tries)
         iterations = iteration
+        uphill: List[Tuple[State, float]] = []
+        neighbor_count = 0
+        for neighbor in iter_all_feasible_neighbors(current):
+            neighbor_count += 1
+            value = state_score(neighbor, objective)
+            if value > current_value:
+                uphill.append((neighbor, value))
 
-        if neighbor is None:
+        if not uphill:
             history.append({
                 "iter": iteration,
                 "objective": current_value,
                 "value": current.total_value(),
                 "candidate_value": None,
                 "accepted": False,
-                "neighbor_tries": tries,
+                "neighbors_evaluated": neighbor_count,
+                "uphill_count": 0,
             })
-            termination_reason = "NO_FEASIBLE_NEIGHBOR_FOUND"
+            termination_reason = "LOCAL_OPTIMUM"
             break
 
-        neighbor_value = state_score(neighbor, objective)
-        accepted = neighbor_value > current_value
-        if accepted:
-            current = neighbor
-            current_value = neighbor_value
-            accepted_moves += 1
-        else:
-            rejected_moves += 1
-
+        neighbor, neighbor_value = uphill[rng.randrange(len(uphill))]
+        current = neighbor
+        current_value = neighbor_value
+        accepted_moves += 1
         history.append({
             "iter": iteration,
             "objective": current_value,
             "value": current.total_value(),
             "candidate_value": neighbor_value,
-            "accepted": accepted,
-            "neighbor_tries": tries,
+            "accepted": True,
+            "neighbors_evaluated": neighbor_count,
+            "uphill_count": len(uphill),
         })
 
     duration = time.perf_counter() - start
     return _result(
         "stochastic",
-        {"max_iter": max_iter, "max_neighbor_tries": max_neighbor_tries, "objective": objective},
+        {"max_iter": max_iter, "objective": objective},
         initial_state,
         current,
         iterations,
         duration,
         history,
         termination_reason,
-        {"accepted_moves": accepted_moves, "rejected_moves": rejected_moves},
+        {"accepted_moves": accepted_moves},
     )
 
 
@@ -362,9 +345,11 @@ def run_random_restart(
 
     first_initial = initial_state.copy()
     best_state: Optional[State] = None
-    best_restart = 0
+    best_search = 0
     total_iterations = 0
     restart_summaries: List[dict] = []
+    initial_search_summary: Optional[dict] = None
+    restarts_done = 0
     history: List[dict] = []
     running_global_best = -1
     termination_reason = "MAX_RESTARTS"
@@ -378,12 +363,14 @@ def run_random_restart(
         search_result = run_steepest(search_initial, rng, max_iter_per_restart, objective)
         search_final = search_result["final_state"]
         search_value = search_final.total_value()
+        # Label 0 = pencarian awal (dari initial_state), 1..N = restart tambahan.
+        label = 0 if search_number == 1 else search_number - 1
 
         for row in search_result["history"]:
             running_global_best = max(running_global_best, row["value"])
             history.append({
                 "global_iter": total_iterations + row["iter"],
-                "restart": search_number,
+                "restart": label,
                 "iter_in_restart": row["iter"],
                 "objective": row["objective"],
                 "value": row["value"],
@@ -394,18 +381,23 @@ def run_random_restart(
             })
 
         total_iterations += search_result["iterations"]
-        restart_summaries.append({
-            "restart": search_number,
+        search_summary = {
+            "restart": label,
             "initial_value": search_initial.total_value(),
             "final_value": search_value,
             "iterations": search_result["iterations"],
             "termination_reason": search_result["termination_reason"],
             "duration_s": search_result["duration_s"],
-        })
+        }
+        if search_number == 1:
+            initial_search_summary = search_summary
+        else:
+            restarts_done += 1
+            restart_summaries.append(search_summary)
 
         if best_state is None or state_score(search_final, objective) > state_score(best_state, objective):
             best_state = search_final.copy()
-            best_restart = search_number
+            best_search = label
 
         if best_state.total_value() == upper_bound:
             termination_reason = "ALL_PACKAGES_LOADED"
@@ -414,7 +406,6 @@ def run_random_restart(
     assert best_state is not None
     duration = time.perf_counter() - start
     iterations_per_restart = [entry["iterations"] for entry in restart_summaries]
-    restart_count = len(restart_summaries) - 1
 
     return _result(
         "random_restart",
@@ -430,9 +421,10 @@ def run_random_restart(
         history,
         termination_reason,
         {
-            "restart_count": restart_count,
+            "restart_count": restarts_done,
             "iterations_per_restart": iterations_per_restart,
-            "best_restart": best_restart,
+            "best_restart": best_search,
+            "initial_search": initial_search_summary,
             "restart_summaries": restart_summaries,
         },
     )
@@ -486,6 +478,7 @@ def save_result(result: dict, out_dir: str | Path) -> Path:
         "variant": result["variant"],
         "seed": result.get("seed"),
         "params": result["params"],
+        "objective": result["params"].get("objective", "value"),
         "initial_value": result["initial_state"].total_value(),
         "final_value": result["final_state"].total_value(),
         "final_objective": result["final_objective"],
