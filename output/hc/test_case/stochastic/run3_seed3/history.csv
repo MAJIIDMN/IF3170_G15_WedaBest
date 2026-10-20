@@ -1,0 +1,4 @@
+iter,objective,value,candidate_value,accepted,neighbors_evaluated,uphill_count
+0,135,135,,False,0,0
+1,150,150,150,True,69,3
+2,150,150,,False,69,0

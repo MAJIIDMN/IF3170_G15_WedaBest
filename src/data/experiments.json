@@ -1,0 +1,40 @@
+{
+  "dataset_utama": "data/test_case.json",
+  "seeds": [1, 2, 3],
+  "output_dir": "output",
+  "objective": "value",
+
+  "hill_climbing": {
+    "steepest_ascent": {
+      "max_iter": 1000
+    },
+    "sideways": {
+      "max_iter": 1000,
+      "max_consecutive_sideways": 50
+    },
+    "stochastic": {
+      "max_iter": 1000
+    },
+    "random_restart": {
+      "max_iter_per_restart": 1000,
+      "max_restart": 10
+    }
+  },
+
+  "simulated_annealing": {
+    "initial_temperature": 100.0,
+    "cooling_rate": 0.999,
+    "min_temperature": 0.01,
+    "max_iter": 20000,
+    "stuck_window": 500,
+    "max_neighbor_tries": 50
+  },
+
+  "genetic_algorithm": {
+    "crossover_rate": 0.81,
+    "mutation_rate": 0.2,
+    "elitisme": 2,
+    "eksperimen_A": {"populasi": 50, "iterasi": [50, 100, 200]},
+    "eksperimen_B": {"iterasi": 100, "populasi": [20, 50, 100]}
+  }
+}

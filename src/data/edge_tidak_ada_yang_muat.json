@@ -1,0 +1,48 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 3,
+      "l": 3,
+      "h": 3
+    },
+    "max_capacity": 10
+  },
+  "packages": [
+    {
+      "id": "P1",
+      "dimensions": {
+        "w": 4,
+        "l": 1,
+        "h": 1
+      },
+      "value": 40,
+      "weight": 2,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "P2",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "value": 60,
+      "weight": 15,
+      "is_fragile": false,
+      "eta": 3
+    },
+    {
+      "id": "P3",
+      "dimensions": {
+        "w": 1,
+        "l": 1,
+        "h": 5
+      },
+      "value": 30,
+      "weight": 1,
+      "is_fragile": false,
+      "eta": 3
+    }
+  ]
+}

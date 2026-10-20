@@ -1,0 +1,124 @@
+{
+  "algorithm": "hill_climbing",
+  "variant": "random_restart",
+  "seed": 1,
+  "params": {
+    "max_iter_per_restart": 1000,
+    "max_restart": 10,
+    "objective": "value"
+  },
+  "objective": "value",
+  "initial_value": 205,
+  "final_value": 205,
+  "final_objective": 205,
+  "best_valid_value": 205,
+  "iterations": 12,
+  "duration_s": 0.6163623999964329,
+  "termination_reason": "MAX_RESTARTS",
+  "extra": {
+    "restart_count": 10,
+    "iterations_per_restart": [
+      2,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "best_restart": 0,
+    "initial_search": {
+      "restart": 0,
+      "initial_value": 205,
+      "final_value": 205,
+      "iterations": 1,
+      "termination_reason": "LOCAL_OPTIMUM",
+      "duration_s": 0.027902900001208764
+    },
+    "restart_summaries": [
+      {
+        "restart": 1,
+        "initial_value": 180,
+        "final_value": 205,
+        "iterations": 2,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.07495780000317609
+      },
+      {
+        "restart": 2,
+        "initial_value": 155,
+        "final_value": 155,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.033844500001578126
+      },
+      {
+        "restart": 3,
+        "initial_value": 185,
+        "final_value": 185,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.030182299997250084
+      },
+      {
+        "restart": 4,
+        "initial_value": 190,
+        "final_value": 190,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.030280200000561308
+      },
+      {
+        "restart": 5,
+        "initial_value": 195,
+        "final_value": 195,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.03263080000033369
+      },
+      {
+        "restart": 6,
+        "initial_value": 190,
+        "final_value": 190,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.027788200000941288
+      },
+      {
+        "restart": 7,
+        "initial_value": 180,
+        "final_value": 180,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.028434400002879556
+      },
+      {
+        "restart": 8,
+        "initial_value": 200,
+        "final_value": 200,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.04211570000188658
+      },
+      {
+        "restart": 9,
+        "initial_value": 175,
+        "final_value": 175,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.028131899998697918
+      },
+      {
+        "restart": 10,
+        "initial_value": 185,
+        "final_value": 185,
+        "iterations": 1,
+        "termination_reason": "LOCAL_OPTIMUM",
+        "duration_s": 0.0409734999993816
+      }
+    ]
+  }
+}

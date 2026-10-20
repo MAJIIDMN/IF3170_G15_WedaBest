@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packing Viewer 3D</title>
+<style>
+  :root {
+    --bg: #f6efdf; --panel: #fbf6ea; --panel2: #f1e7d2; --line: #ddd0b4;
+    --text: #2f2a22; --muted: #7b6f5c; --accent: #c46f12; --ok: #2f8f5b; --bad: #c8363b;
+    --accent-ink: #fffaf0; --temp: #2a7a78;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #app { display: grid; grid-template-columns: 330px 1fr; height: 100vh; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 14px 14px 30px; }
+  main { position: relative; display: grid; grid-template-rows: 1fr 170px; min-width: 0; }
+  #view { position: relative; overflow: hidden; min-height: 0; }
+  #view canvas { display: block; }
+  h1 { font-size: 15px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  section { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+  section > h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  label.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 5px 0; }
+  label.row span { color: var(--muted); }
+  input[type=number], select { width: 120px; background: #fff; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; }
+  select.wide { width: 100%; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .file { display: block; width: 100%; text-align: center; padding: 7px; border: 1px dashed var(--line); border-radius: 6px; cursor: pointer; color: var(--muted); margin: 6px 0; }
+  .file:hover { border-color: var(--accent); color: var(--text); }
+  .file input { display: none; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat { background: var(--panel2); border-radius: 6px; padding: 6px 8px; }
+  .stat b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--muted); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-weight: 600; font-size: 12px; }
+  .badge.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .badge.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  #viol { max-height: 150px; overflow-y: auto; font-size: 12px; color: var(--muted); margin: 6px 0 0; padding-left: 16px; }
+  #viol li { margin: 2px 0; }
+  #truckList { font-size: 12px; margin-top: 8px; }
+  #outsideList { font-size: 12px; color: var(--muted); }
+  #hud { position: absolute; left: 12px; top: 10px; pointer-events: none; font-size: 12px; color: var(--muted); }
+  #hud b { color: var(--text); }
+  #legend { position: absolute; right: 12px; top: 10px; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 90%, transparent); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+  #legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  #tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; display: none; min-width: 170px; box-shadow: 0 4px 14px rgba(80,60,30,.15); z-index: 5; }
+  #tip table { border-collapse: collapse; } #tip td { padding: 0 8px 0 0; } #tip td:first-child { color: var(--muted); }
+  .lbl { font: 600 11px system-ui, sans-serif; color: #fff; background: rgba(47,42,34,.7); padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+  .lbl.out { opacity: .7; }
+  .lbl.bad { background: rgba(200,54,59,.9); }
+  .axis { font: 600 11px system-ui, sans-serif; color: var(--accent); }
+  .tname { font: 700 12px system-ui, sans-serif; color: var(--text); }
+  #chartWrap { border-top: 1px solid var(--line); background: var(--panel); position: relative; }
+  #chart { width: 100%; height: 100%; display: block; }
+  #drop { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(196,111,18,.08); border: 2px dashed var(--accent); font-size: 16px; z-index: 10; pointer-events: none; }
+  #msg { font-size: 12px; color: var(--accent); min-height: 16px; margin-top: 4px; }
+  kbd { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 11px; }
+  @media (max-width: 760px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: auto 70vh; height: auto; }
+    aside { order: 2; border-right: 0; }
+    main { order: 1; height: 70vh; grid-template-rows: 1fr 130px; }
+    #legend { display: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <h1>Packing Viewer 3D</h1>
+    <div class="sub">Viewer hasil program Python: dataset, state JSON, dan replay dari <code>export_replay.py</code>. Tekan <kbd>Space</kbd> untuk putar/jeda replay.</div>
+
+    <section>
+      <h2>Data</h2>
+      <label class="file">Muat dataset / state / replay (.json)<input type="file" id="fileIn" accept=".json" multiple></label>
+      <div class="sub" style="margin:0">Atau seret file JSON ke layar. Untuk state JSON (<code>initial_state.json</code> / <code>final_state.json</code>), muat dataset-nya dulu.</div>
+      <div id="msg"></div>
+    </section>
+
+    <section id="replayBar" style="display:none">
+      <h2>Replay hasil Python</h2>
+      <div class="sub" id="replayInfo" style="margin-bottom:6px"></div>
+      <input type="range" id="scrub" min="0" max="0" value="0">
+      <div class="btns">
+        <button id="rPlay" class="primary">▶ Putar</button>
+        <button id="rPrev">◀</button>
+        <button id="rNext">▶</button>
+        <button id="rExit">Keluar replay</button>
+      </div>
+      <label class="row"><span>Kecepatan</span><span id="speedLbl" style="color:var(--text)">20 frame/detik</span></label>
+      <input type="range" id="speed" min="0" max="100" value="45">
+    </section>
+
+    <section id="viewSec" style="display:none">
+      <h2>Tampilkan</h2>
+      <div class="btns">
+        <button id="vInit">State awal</button>
+        <button id="vCur">Current / akhir</button>
+        <button id="vBest">best_valid</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Opsi</h2>
+      <label class="row"><span>Label id paket</span><input type="checkbox" id="optLabels" checked></label>
+      <label class="row"><span>Tampilkan paket di luar</span><input type="checkbox" id="optOutside" checked></label>
+    </section>
+
+    <section>
+      <h2>Status</h2>
+      <div class="stats">
+        <div class="stat"><small>Iterasi</small><b id="sIter">0</b></div>
+        <div class="stat"><small>Suhu T</small><b id="sT">–</b></div>
+        <div class="stat"><small>Total value</small><b id="sVal">0</b></div>
+        <div class="stat"><small>Objective</small><b id="sObj">0</b></div>
+        <div class="stat"><small>best_valid value</small><b id="sBest">–</b></div>
+        <div class="stat"><small>Paket di dalam</small><b id="sIn">0</b></div>
+      </div>
+      <div id="truckList"></div>
+      <div style="margin-top:8px">Status: <span id="sFeas" class="badge ok">valid</span> <span id="sView" style="color:var(--muted)"></span></div>
+      <ul id="viol"></ul>
+      <div style="margin-top:8px"><span style="color:var(--muted)">Di luar truk:</span> <span id="outsideList">–</span></div>
+    </section>
+  </aside>
+
+  <main>
+    <div id="view">
+      <div id="hud"></div>
+      <div id="legend">
+        <div><i style="background:#bbb;outline:2px solid #c8363b"></i>fragile (garis merah)</div>
+        <div><i style="background:#c8363b"></i>melanggar constraint</div>
+        <div><i style="background:#999;opacity:.6"></i>di luar truk</div>
+      </div>
+      <div id="tip"></div>
+      <div id="drop">Lepas file JSON di sini</div>
+    </div>
+    <div id="chartWrap"><canvas id="chart"></canvas></div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// Model (port dari models/model.py)
+const ORIENT = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+const ORIENT_LABEL = ["{w:x, l:y, h:z}","{w:x, l:z, h:y}","{w:y, l:x, h:z}","{w:z, l:x, h:y}","{w:y, l:z, h:x}","{w:z, l:y, h:x}"];
+const TRUCK_GAP = 2;   // jarak antar-truk di gambar
+
+function eff(pkg, ori) { const p = ORIENT[ori]; return [pkg.dims[p[0]], pkg.dims[p[1]], pkg.dims[p[2]]]; }
+
+function readDims(raw, def) {
+  if (Array.isArray(raw)) return raw.slice(0, 3).map(Number);
+  if (raw && typeof raw === 'object')
+    return [+(raw.w ?? raw.width ?? def), +(raw.l ?? raw.length ?? raw.d ?? def), +(raw.h ?? raw.height ?? def)];
+  return [def, def, def];
+}
+function parseTruck(t) {
+  const dims = readDims(t.dimensions ?? t.Dimensions, 10);
+  return { W: dims[0], L: dims[1], H: dims[2], cap: +(t.max_capacity ?? t.MaxCapacity ?? t.capacity ?? 0) };
+}
+// Dataset boleh punya "truck" (satu) atau "trucks" (list), sama seperti models/io.py
+function parseProblem(data) {
+  let list = data.trucks ?? data.Trucks;
+  if (!list) {
+    let t = data.truck ?? data.Truck ?? data.truck_dimensions;
+    if (!t && data.dimensions && data.max_capacity !== undefined) t = data;
+    list = [t];
+  }
+  const pk = data.packages ?? data.Packages ?? data.items ?? [];
+  const trucks = list.map(parseTruck);
+  const offset = []; let x = 0;
+  for (const t of trucks) { offset.push(x); x += t.W + TRUCK_GAP; }
+  return {
+    trucks, offset, width: x - TRUCK_GAP,
+    packages: pk.map(d => ({
+      id: String(d.id ?? d.Id ?? d.ID ?? ''),
+      dims: readDims(d.dimensions ?? d.Dimensions, 1),
+      value: +(d.value ?? d.Value ?? 0),
+      weight: +(d.weight ?? d.Weight ?? 0),
+      fragile: !!(d.is_fragile ?? d.IsFragile ?? d.isFragile ?? false),
+      eta: d.eta ?? d.ETA ?? null,
+    })),
+  };
+}
+
+// State = array sejajar dengan problem.packages: { pos: [x,y,z] | null, ori, t (indeks truk) }
+const emptyState = prob => prob.packages.map(() => ({ pos: null, ori: 0, t: 0 }));
+
+// Constraint & objective (port dari geometry.py & SA.py)
+function aabb(prob, st, i) {
+  const [x, y, z] = st[i].pos, [w, l, h] = eff(prob.packages[i], st[i].ori);
+  return [x, y, z, x + w, y + l, z + h];
+}
+
+function validate(prob, st, withMsg = false) {
+  const P = prob.packages;
+  const v = { bounds: [], overlap: [], weight: [], fragile: [], support: [] };
+  const add = (cat, ids, msg) => v[cat].push({ ids, msg: withMsg ? msg() : '' });
+  const weights = prob.trucks.map(() => 0);
+
+  prob.trucks.forEach((T, k) => {
+    const inside = [];
+    for (let i = 0; i < st.length; i++) if (st[i].pos && st[i].t === k) inside.push(i);
+    const box = new Map(inside.map(i => [i, aabb(prob, st, i)]));
+    const tk = prob.trucks.length > 1 ? ` (truk ${k + 1})` : '';
+
+    for (const i of inside) {
+      const b = box.get(i);
+      if (b[0] < 0 || b[1] < 0 || b[2] < 0 || b[3] > T.W || b[4] > T.L || b[5] > T.H)
+        add('bounds', [i], () => `${P[i].id} menembus dinding peti${tk}`);
+    }
+    for (let a = 0; a < inside.length; a++) for (let c = a + 1; c < inside.length; c++) {
+      const A = box.get(inside[a]), B = box.get(inside[c]);
+      if (A[3] <= B[0] || B[3] <= A[0] || A[4] <= B[1] || B[4] <= A[1] || A[5] <= B[2] || B[5] <= A[2]) continue;
+      add('overlap', [inside[a], inside[c]], () => `${P[inside[a]].id} overlap dengan ${P[inside[c]].id}${tk}`);
+    }
+    for (const i of inside) weights[k] += P[i].weight;
+    if (weights[k] > T.cap) add('weight', [], () => `Overweight${tk}: ${weights[k]} > ${T.cap}`);
+    for (const j of inside) {
+      if (!P[j].fragile) continue;
+      const J = box.get(j);
+      for (const i of inside) {
+        if (i === j) continue;
+        const I = box.get(i);
+        if (I[2] === J[5] && !(I[3] <= J[0] || J[3] <= I[0]) && !(I[4] <= J[1] || J[4] <= I[1]))
+          add('fragile', [i, j], () => `${P[j].id} (fragile) menopang ${P[i].id}`);
+      }
+    }
+    for (const i of inside) {
+      const I = box.get(i);
+      if (I[2] === 0) continue;
+      let ok = false;
+      for (const o of inside) {
+        if (o === i || P[o].fragile) continue;
+        const O = box.get(o);
+        // Untuk koordinat integer, "ada titik alas yang ditopang" ekuivalen dengan irisan persegi > 0
+        if (O[5] === I[2] && I[0] < O[3] && O[0] < I[3] && I[1] < O[4] && O[1] < I[4]) { ok = true; break; }
+      }
+      if (!ok) add('support', [i], () => `${P[i].id} melayang (tidak ada support)`);
+    }
+  });
+  return { v, weights };
+}
+
+function evaluate(prob, st, withMsg = false) {
+  const { v, weights } = validate(prob, st, withMsg);
+  let value = 0; for (let i = 0; i < st.length; i++) if (st[i].pos) value += prob.packages[i].value;
+  let vWeight = 0;
+  prob.trucks.forEach((T, k) => { if (weights[k] > T.cap) vWeight += 1 + (weights[k] - T.cap) / Math.max(T.cap, 1); });
+  const pen = v.bounds.length + v.overlap.length + v.support.length + v.fragile.length + vWeight;
+  const lambda = prob.packages.reduce((s, p) => s + p.value, 0) + 1;
+  return { value, weights, pen, obj: value - lambda * pen, feasible: pen === 0, v };
+}
+
+// Three.js scene
+const BG = 0xf6efdf;
+const view = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+view.appendChild(renderer.domElement);
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none';
+view.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(BG);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xe8dcc0, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+scene.add(sun);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ color: 0xefe6d1 }));
+ground.rotation.x = -Math.PI / 2; ground.position.y = -0.09;
+scene.add(ground);
+
+const world = new THREE.Group();   // origin = sudut (0,0,0) truk pertama
+scene.add(world);
+let truckGroup = null;
+
+// Koordinat soal (x=w, y=l, z=h) -> Three (x, z, -y), tetap right-handed dengan Y ke atas
+const toThree = (x, y, z) => new THREE.Vector3(x, z, -y);
+
+const PALETTE = [0x4e79a7, 0xf28e2b, 0x59a14f, 0xb07aa1, 0x76b7b2, 0xedc948, 0x9c755f, 0xff9da7, 0x6b8e23, 0x5f9ed1, 0xc85200, 0x8cd17d, 0x7e57c2, 0x26a69a, 0xd4a6c8, 0xa0cbe8];
+const BAD = new THREE.Color(0xc8363b);
+
+function stripeTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = '#c9c9c9'; g.lineWidth = 9;
+  for (let k = -64; k < 128; k += 22) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 64, 64); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const STRIPES = stripeTexture();
+
+function cssLabel(cls, txt, pos, parent) {
+  const d = document.createElement('div'); d.className = cls; d.textContent = txt;
+  const o = new CSS2DObject(d); o.position.copy(pos); parent.add(o);
+}
+
+function buildTrucks(prob) {
+  if (truckGroup) { world.remove(truckGroup); truckGroup.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); if (o.isCSS2DObject) o.element.remove(); }); }
+  const g = new THREE.Group();
+  prob.trucks.forEach((T, k) => {
+    const ox = prob.offset[k];
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(T.W, 0.08, T.L), new THREE.MeshLambertMaterial({ color: 0xd9c7a2 }));
+    floor.position.copy(toThree(ox + T.W / 2, T.L / 2, -0.04)); g.add(floor);
+
+    const pts = [];
+    for (let x = 0; x <= T.W; x++) pts.push(toThree(ox + x, 0, 0.002), toThree(ox + x, T.L, 0.002));
+    for (let y = 0; y <= T.L; y++) pts.push(toThree(ox, y, 0.002), toThree(ox + T.W, y, 0.002));
+    g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xa8916a, transparent: true, opacity: 0.6 })));
+
+    const shell = new THREE.BoxGeometry(T.W, T.H, T.L);
+    const walls = new THREE.Mesh(shell, new THREE.MeshLambertMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0.08, side: THREE.BackSide, depthWrite: false }));
+    walls.position.copy(toThree(ox + T.W / 2, T.L / 2, T.H / 2)); g.add(walls);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(shell), new THREE.LineBasicMaterial({ color: 0x8a5a1c }));
+    edges.position.copy(walls.position); g.add(edges);
+
+    if (prob.trucks.length > 1) cssLabel('tname', `Truk ${k + 1}`, toThree(ox + T.W / 2, -1.2, 0), g);
+  });
+  cssLabel('axis', 'x (w) →', toThree(prob.width + 0.6, -0.4, 0), g);
+  cssLabel('axis', 'y (l) →', toThree(-0.6, prob.trucks[0].L + 0.6, 0), g);
+  cssLabel('axis', 'z (h) ↑', toThree(-0.4, -0.4, prob.trucks[0].H + 0.4), g);
+  cssLabel('axis', '(0,0,0)', toThree(-0.3, -0.3, 0), g);
+  world.add(g); truckGroup = g;
+}
+
+let meshes = [];   // per paket: { mesh, edges, label, base, bad, out }
+function buildBoxes(prob) {
+  for (const m of meshes) { world.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose(); m.edges.material.dispose(); m.div.remove(); }
+  const geo = new THREE.BoxGeometry(1, 1, 1), eg = new THREE.EdgesGeometry(geo);
+  meshes = prob.packages.map((p, i) => {
+    const mat = new THREE.MeshLambertMaterial({ color: PALETTE[i % PALETTE.length], transparent: true, opacity: 0.95, map: p.fragile ? STRIPES : null });
+    const mesh = new THREE.Mesh(geo.clone(), mat);
+    mesh.userData.idx = i;
+    const edges = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: p.fragile ? 0xd62f38 : 0x2f2a22 }));
+    mesh.add(edges);
+    const div = document.createElement('div'); div.className = 'lbl'; div.textContent = (p.fragile ? '⚠ ' : '') + p.id;
+    const label = new CSS2DObject(div); mesh.add(label);
+    world.add(mesh);
+    return { mesh, edges, label, div, base: new THREE.Color(PALETTE[i % PALETTE.length]), bad: false, out: false };
+  });
+}
+
+function layoutOutside(prob, st) {
+  // Paket di luar ditata berjajar di sebelah kiri truk pertama (sisi -x), per kolom
+  const res = new Map();
+  let right = -2, cy = 0, colW = 0;
+  const maxL = Math.max(...prob.trucks.map(T => T.L), 6);
+  for (let i = 0; i < st.length; i++) {
+    if (st[i].pos) continue;
+    const d = eff(prob.packages[i], st[i].ori);
+    if (cy + d[1] > maxL && cy > 0) { right -= colW + 0.8; cy = 0; colW = 0; }
+    res.set(i, [right - d[0], cy, 0]); cy += d[1] + 0.6; colW = Math.max(colW, d[0]);
+  }
+  return res;
+}
+
+function showState(prob, st, ev) {
+  const out = layoutOutside(prob, st);
+  const bad = new Set();
+  for (const k of ['bounds', 'overlap', 'support', 'fragile']) for (const e of ev.v[k]) (k === 'fragile' ? [e.ids[0]] : e.ids).forEach(i => bad.add(i));
+  st.forEach((p, i) => {
+    const m = meshes[i], d = eff(prob.packages[i], p.ori);
+    const pos = p.pos ? [p.pos[0] + prob.offset[p.t ?? 0], p.pos[1], p.pos[2]] : out.get(i);
+    m.mesh.position.copy(toThree(pos[0] + d[0] / 2, pos[1] + d[1] / 2, pos[2] + d[2] / 2));
+    m.mesh.scale.set(d[0], d[2], d[1]);
+    m.out = !p.pos; m.bad = bad.has(i);
+    m.div.className = 'lbl' + (m.out ? ' out' : '') + (m.bad ? ' bad' : '');
+  });
+  applyLook();
+}
+
+function applyLook() {
+  for (const m of meshes) {
+    m.mesh.visible = !m.out || opt.outside;
+    m.label.visible = opt.labels && m.mesh.visible;
+    const mat = m.mesh.material;
+    mat.opacity = m.out ? 0.45 : 0.95;
+    if (m.bad) mat.color.copy(m.base).lerp(BAD, 0.7);
+    else if (m.out) mat.color.copy(m.base).lerp(new THREE.Color(BG), 0.35);
+    else mat.color.copy(m.base);
+    mat.emissive.setHex(m.mesh.userData.idx === hoverIdx ? 0x333333 : 0);
+  }
+}
+
+function frameCamera(prob) {
+  const W = prob.width, L = Math.max(...prob.trucks.map(T => T.L)), H = Math.max(...prob.trucks.map(T => T.H));
+  world.position.set(-W / 2, 0, L / 2);
+  const D = Math.max(W, L, H);
+  const r = 0.5 * Math.hypot(W * 1.6 + prob.trucks[0].W * 0.6, L, H);
+  const dist = r / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.95;
+  controls.target.set(-prob.trucks[0].W * 0.35, H * 0.3, 0);
+  camera.position.copy(controls.target).add(new THREE.Vector3(0.45, 0.7, 1).normalize().multiplyScalar(dist));
+  sun.position.set(D * 1.5, D * 3, D * 1.2);
+  controls.update();
+}
+
+// Tooltip
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById('tip');
+let hoverIdx = -1;
+renderer.domElement.addEventListener('pointermove', e => {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(meshes.filter(m => m.mesh.visible).map(m => m.mesh), false)[0];
+  const prev = hoverIdx;
+  hoverIdx = hit ? hit.object.userData.idx : -1;
+  if (prev !== hoverIdx) applyLook();
+  if (hoverIdx < 0 || !app.prob) { tip.style.display = 'none'; return; }
+  const p = app.prob.packages[hoverIdx], s = app.shown[hoverIdx], d = eff(p, s.ori);
+  const truck = s.pos && app.prob.trucks.length > 1 ? `<tr><td>Truk</td><td>${(s.t ?? 0) + 1}</td></tr>` : '';
+  tip.innerHTML = `<b>${p.id}</b>${p.fragile ? ' <span class="badge bad">fragile</span>' : ''}<table>
+    ${truck}<tr><td>Posisi</td><td>${s.pos ? `(${s.pos.join(', ')})` : 'di luar truk'}</td></tr>
+    <tr><td>Dimensi asli</td><td>${p.dims.join(' × ')}</td></tr>
+    <tr><td>Orientasi</td><td>${s.ori} ${ORIENT_LABEL[s.ori]}</td></tr>
+    <tr><td>Dimensi efektif</td><td>${d.join(' × ')}</td></tr>
+    <tr><td>Value</td><td>${p.value}</td></tr><tr><td>Berat</td><td>${p.weight}</td></tr>
+    <tr><td>ETA</td><td>${p.eta ?? '–'}</td></tr></table>`;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 200) + 'px';
+  tip.style.top = Math.min(e.clientY - r.top + 14, r.height - 180) + 'px';
+});
+renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; hoverIdx = -1; applyLook(); });
+
+// Grafik
+const chart = document.getElementById('chart'), cg = chart.getContext('2d');
+const series = { pts: [], stride: 1, n: 0 };
+function resetSeries() { series.pts = []; series.stride = 1; series.n = 0; }
+function drawChart(cursorIter = null) {
+  const dpr = devicePixelRatio, w = chart.clientWidth, h = chart.clientHeight;
+  if (chart.width !== w * dpr || chart.height !== h * dpr) { chart.width = w * dpr; chart.height = h * dpr; }
+  cg.setTransform(dpr, 0, 0, dpr, 0, 0); cg.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement), col = k => css.getPropertyValue(k).trim();
+  const L = 48, R = 48, Tp = 22, B = 22, pw = w - L - R, ph = h - Tp - B;
+  cg.font = '11px system-ui'; cg.fillStyle = col('--muted');
+  const pts = series.pts;
+  if (pts.length < 2) { cg.fillText('Grafik total value & suhu terhadap iterasi akan muncul saat file replay dimuat.', L, h / 2); return; }
+  const maxI = Math.max(pts[pts.length - 1].i, 1), minI = pts[0].i;
+  const maxV = Math.max(app.prob ? app.prob.packages.reduce((s, p) => s + p.value, 0) : 1, 1);
+  const X = i => L + (i - minI) / Math.max(maxI - minI, 1) * pw, Y = v => Tp + ph - v / maxV * ph;
+  // pita merah = state tidak valid
+  cg.fillStyle = 'rgba(200,54,59,.12)';
+  for (let k = 0; k < pts.length - 1; k++) if (!pts[k].f) cg.fillRect(X(pts[k].i), Tp, Math.max(X(pts[k + 1].i) - X(pts[k].i), 1), ph);
+  cg.strokeStyle = col('--line'); cg.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) { const y = Tp + ph * g / 4; cg.beginPath(); cg.moveTo(L, y); cg.lineTo(L + pw, y); cg.stroke();
+    cg.fillStyle = col('--muted'); cg.fillText(Math.round(maxV * (1 - g / 4)), 6, y + 4); }
+  const line = (get, color, width, dash = []) => { cg.beginPath(); cg.setLineDash(dash); let started = false;
+    for (const p of pts) { const v = get(p); if (v === null || v === undefined) continue; started ? cg.lineTo(X(p.i), Y(v)) : cg.moveTo(X(p.i), Y(v)); started = true; }
+    cg.strokeStyle = color; cg.lineWidth = width; cg.stroke(); cg.setLineDash([]); };
+  const T0 = pts.find(p => p.T)?.T;
+  if (T0) { cg.beginPath(); pts.forEach((p, k) => { const y = Tp + ph - (p.T / T0) * ph; k ? cg.lineTo(X(p.i), y) : cg.moveTo(X(p.i), y); });
+    cg.strokeStyle = col('--temp'); cg.globalAlpha = 0.6; cg.lineWidth = 1; cg.stroke(); cg.globalAlpha = 1;
+    cg.fillStyle = col('--temp'); cg.fillText(`T₀=${T0}`, L + pw + 6, Tp + 4); cg.fillText('0', L + pw + 6, Tp + ph + 4); }
+  line(p => p.v, col('--accent'), 1.6);
+  line(p => p.b, col('--ok'), 1.4, [5, 3]);
+  if (cursorIter !== null) { cg.strokeStyle = col('--text'); cg.beginPath(); cg.moveTo(X(cursorIter), Tp); cg.lineTo(X(cursorIter), Tp + ph); cg.stroke(); }
+  cg.fillStyle = col('--muted'); cg.fillText(`iterasi ${minI}`, L, h - 6); cg.textAlign = 'right'; cg.fillText(maxI, L + pw, h - 6); cg.textAlign = 'left';
+  let lx = L; const leg = (c, t, dash) => { cg.strokeStyle = c; cg.lineWidth = 2; cg.setLineDash(dash || []); cg.beginPath(); cg.moveTo(lx, 11); cg.lineTo(lx + 16, 11); cg.stroke(); cg.setLineDash([]);
+    cg.fillStyle = col('--muted'); cg.fillText(t, lx + 20, 15); lx += cg.measureText(t).width + 40; };
+  leg(col('--accent'), app.replay?.algorithm === 'ga' ? 'value terbaik per generasi' : 'value current');
+  leg(col('--ok'), 'best_valid', [5, 3]); if (T0) leg(col('--temp'), 'suhu T (skala T₀)');
+  cg.fillStyle = 'rgba(200,54,59,.4)'; cg.fillRect(lx, 6, 12, 10); cg.fillStyle = col('--muted'); cg.fillText('state tidak valid', lx + 16, 15);
+}
+
+// App state & UI
+const $ = id => document.getElementById(id);
+const opt = { labels: true, outside: true };
+const app = { prob: null, view: null, shown: null, replay: null, rIdx: 0, rPlaying: false, rBest: false, dirty: true, lastShown: null };
+
+function msg(t, isErr) { $('msg').textContent = t; $('msg').style.color = isErr ? 'var(--bad)' : 'var(--accent)'; }
+function speed() { const s = +$('speed').value; return Math.max(1, Math.round(Math.pow(10, s / 100 * 3.3))); }
+function emptyView() { return { st: emptyState(app.prob), label: 'belum ada state; muat state JSON atau replay' }; }
+
+function loadProblem(prob, name) {
+  if (!prob.packages.length) { msg('Dataset tidak punya paket.', true); return false; }
+  exitReplay();
+  app.prob = prob; app.lastShown = null;
+  buildTrucks(prob); buildBoxes(prob); frameCamera(prob);
+  const trucks = prob.trucks.map(T => `${T.W}×${T.L}×${T.H} (kap. ${T.cap})`).join(', ');
+  msg(`Dataset ${name}: ${prob.packages.length} paket, ${prob.trucks.length} truk: ${trucks}.`);
+  app.view = emptyView(); app.dirty = true;
+  return true;
+}
+
+function currentDisplay() {
+  if (app.replay) {
+    if (app.rBest && app.replay.best) return { st: app.replay.best.st, iter: app.replay.frames[app.rIdx].iter, T: null, label: 'menampilkan best_valid (replay)' };
+    const f = app.replay.frames[app.rIdx];
+    return { st: f.st, iter: f.iter, T: f.T, label: `replay frame ${app.rIdx + 1}/${app.replay.frames.length}` };
+  }
+  return { st: app.view.st, iter: null, T: null, label: app.view.label };
+}
+
+function refresh() {
+  if (!app.prob) return;
+  const d = currentDisplay();
+  const ev = evaluate(app.prob, d.st, true);
+  if (d.st !== app.lastShown) { showState(app.prob, d.st, ev); app.lastShown = d.st; }
+  app.shown = d.st;
+  const fmt = x => Number.isInteger(x) ? x.toLocaleString('id') : x.toLocaleString('id', { maximumFractionDigits: 2 });
+  $('sIter').textContent = d.iter === null || d.iter === undefined ? '–' : fmt(d.iter);
+  $('sT').textContent = d.T === null || d.T === undefined ? '–' : d.T < 1 ? d.T.toFixed(4) : d.T.toFixed(2);
+  $('sVal').textContent = fmt(ev.value);
+  $('sObj').textContent = fmt(ev.obj);
+  const bv = app.replay ? app.replay.bestVal : null;
+  $('sBest').textContent = bv === null || bv === undefined ? '–' : fmt(bv);
+  const inside = d.st.filter(p => p.pos).length;
+  $('sIn').textContent = `${inside} / ${d.st.length}`;
+  $('truckList').innerHTML = app.prob.trucks.map((T, k) => {
+    const val = d.st.reduce((s, p, i) => s + (p.pos && p.t === k ? app.prob.packages[i].value : 0), 0);
+    const over = ev.weights[k] > T.cap ? ' style="color:var(--bad)"' : '';
+    return `<div>Truk ${k + 1}: value <b>${val}</b> · berat <b${over}>${ev.weights[k]} / ${T.cap}</b></div>`;
+  }).join('');
+  $('sFeas').textContent = ev.feasible ? 'valid' : 'tidak valid'; $('sFeas').className = 'badge ' + (ev.feasible ? 'ok' : 'bad');
+  $('sView').textContent = d.label;
+  const all = Object.entries(ev.v).flatMap(([k, arr]) => arr.map(e => `[${k}] ${e.msg}`));
+  $('viol').innerHTML = all.slice(0, 60).map(s => `<li>${s}</li>`).join('') + (all.length > 60 ? `<li>…dan ${all.length - 60} lagi</li>` : '');
+  const outs = app.prob.packages.filter((_, i) => !d.st[i].pos).map(p => p.id);
+  $('outsideList').textContent = outs.length ? outs.join(', ') : '–';
+  $('hud').innerHTML = `<b>${inside}</b> paket di dalam · <b>${outs.length}</b> di luar · value <b>${fmt(ev.value)}</b>`;
+  drawChart(app.replay ? d.iter : null);
+}
+
+$('vInit').onclick = () => { if (!app.replay) return; app.rIdx = 0; syncScrub(); app.dirty = true; };
+$('vCur').onclick = () => { if (!app.replay) return; app.rIdx = app.replay.frames.length - 1; syncScrub(); app.dirty = true; };
+$('vBest').onclick = () => { if (!app.replay) return; app.rBest = true; app.lastShown = null; app.dirty = true; };
+$('optLabels').onchange = e => { opt.labels = e.target.checked; applyLook(); };
+$('optOutside').onchange = e => { opt.outside = e.target.checked; applyLook(); };
+$('speed').addEventListener('input', () => { $('speedLbl').textContent = `${speed()} frame/detik`; });
+
+// Replay
+const FRAME_INFO = { sa: 'tiap move yang diterima', ga: 'individu terbaik tiap generasi', hc: 'tiap kali current berganti' };
+function startReplay(data) {
+  const prob = parseProblem(data.dataset);
+  if (!loadProblem(prob, data.dataset_name || 'replay')) return;
+  const idx = new Map(prob.packages.map((p, i) => [p.id, i]));
+  const toSt = pl => { const st = emptyState(prob);
+    for (const [id, v] of Object.entries(pl)) { const i = idx.get(id); if (i === undefined) continue; st[i] = v ? { pos: [v[0], v[1], v[2]], ori: v[3], t: v[4] ?? 0 } : { pos: null, ori: 0, t: 0 }; }
+    return st; };
+  const prm = data.params || {};
+  const Tof = it => prm.initial_temperature ? prm.initial_temperature * Math.pow(prm.cooling_rate, it) : null;
+  const algo = data.algorithm || 'sa';
+  app.replay = {
+    algorithm: algo,
+    frames: data.frames.map(f => ({ iter: f.iter, st: toSt(f.placements), T: algo === 'sa' ? Tof(f.iter) : null })),
+    best: data.best_valid ? { st: toSt(data.best_valid.placements) } : null,
+    bestVal: data.best_valid_value ?? null,
+  };
+  resetSeries();
+  let best = null;
+  for (const h of data.history || []) { if (h.feasible && (best === null || h.value > best)) best = h.value;
+    series.pts.push({ i: h.iter, v: h.value, b: best, f: h.feasible, T: h.temperature ?? null }); }
+  app.rIdx = 0; app.rPlaying = false; app.rBest = false;
+  $('replayBar').style.display = ''; $('viewSec').style.display = '';
+  const name = algo.toUpperCase() + (data.variant ? ` ${data.variant}` : '');
+  $('replayInfo').textContent = `${name} · seed ${data.seed ?? '?'} · ${data.iterations ?? '?'} iterasi · ${app.replay.frames.length} frame (${FRAME_INFO[algo] ?? ''})`;
+  $('scrub').max = app.replay.frames.length - 1; syncScrub();
+  msg(`Replay dimuat: ${data.dataset_name || ''}`);
+  app.lastShown = null; app.dirty = true;
+}
+function syncScrub() { $('scrub').value = app.rIdx; app.rBest = false; }
+function toggleReplay() {
+  if (!app.replay) return;
+  app.rBest = false; app.rPlaying = !app.rPlaying;
+  if (app.rPlaying && app.rIdx >= app.replay.frames.length - 1) { app.rIdx = 0; syncScrub(); app.dirty = true; }
+  $('rPlay').textContent = app.rPlaying ? '❚❚ Jeda' : '▶ Putar';
+}
+function exitReplay() {
+  if (!app.replay) return;
+  app.replay = null; app.rPlaying = false; $('rPlay').textContent = '▶ Putar';
+  $('replayBar').style.display = 'none'; $('viewSec').style.display = 'none';
+  resetSeries();
+  if (app.prob) app.view = emptyView();
+  app.lastShown = null; app.dirty = true;
+}
+$('scrub').oninput = e => { app.rIdx = +e.target.value; app.rBest = false; app.dirty = true; };
+$('rPlay').onclick = toggleReplay;
+$('rPrev').onclick = () => { app.rIdx = Math.max(0, app.rIdx - 1); syncScrub(); app.dirty = true; };
+$('rNext').onclick = () => { app.rIdx = Math.min(app.replay.frames.length - 1, app.rIdx + 1); syncScrub(); app.dirty = true; };
+$('rExit').onclick = () => exitReplay();
+
+// Muat file
+function loadStateJson(data, name) {
+  if (!app.prob) { msg('Muat dataset dulu sebelum state JSON.', true); return; }
+  exitReplay();
+  const idx = new Map(app.prob.packages.map((p, i) => [p.id, i]));
+  const st = emptyState(app.prob);
+  let miss = 0;
+  for (const e of data.placements) {
+    const i = idx.get(e.package_id ?? e.id); if (i === undefined) { miss++; continue; }
+    st[i] = { pos: e.position ? e.position.map(Number) : null, ori: +(e.orientation_idx ?? 0), t: +(e.truck_idx ?? 0) };
+  }
+  app.view = { st, label: `menampilkan ${name}` };
+  app.lastShown = null; app.dirty = true;
+  msg(`State ${name} dimuat` + (miss ? ` (${miss} id tidak cocok dengan dataset!)` : '') + '.', miss > 0);
+}
+async function handleFiles(files) {
+  const list = [...files].map(f => ({ f, kind: null, data: null }));
+  for (const it of list) {
+    try { it.data = JSON.parse(await it.f.text()); } catch { msg(`${it.f.name}: bukan JSON valid.`, true); return; }
+    it.kind = it.data.frames ? 'replay' : it.data.placements ? 'state' : 'dataset';
+  }
+  // dataset dulu, baru state
+  list.sort((a, b) => (a.kind === 'dataset' ? 0 : 1) - (b.kind === 'dataset' ? 0 : 1));
+  for (const it of list) {
+    if (it.kind === 'replay') startReplay(it.data);
+    else if (it.kind === 'dataset') loadProblem(parseProblem(it.data), it.f.name);
+    else loadStateJson(it.data, it.f.name);
+  }
+}
+$('fileIn').onchange = e => { handleFiles(e.target.files); e.target.value = ''; };
+let dragDepth = 0;
+addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('drop').style.display = 'flex'; });
+addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('drop').style.display = 'none'; } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; $('drop').style.display = 'none'; handleFiles(e.dataTransfer.files); });
+addEventListener('keydown', e => { if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) { e.preventDefault(); toggleReplay(); } });
+
+// Loop
+function resize() {
+  const w = view.clientWidth, h = view.clientHeight;
+  renderer.setSize(w, h); labelRenderer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix(); app.dirty = true;
+}
+new ResizeObserver(resize).observe(view);
+new ResizeObserver(() => drawChart(app.replay ? currentDisplay().iter : null)).observe(chart);
+
+let lastReplayTick = 0, lastUi = 0;
+function animate(now) {
+  requestAnimationFrame(animate);
+  if (app.replay && app.rPlaying && now - lastReplayTick > 1000 / speed()) {
+    lastReplayTick = now;
+    if (app.rIdx < app.replay.frames.length - 1) { app.rIdx++; syncScrub(); app.dirty = true; }
+    else { app.rPlaying = false; $('rPlay').textContent = '▶ Putar'; }
+  }
+  if (app.dirty && now - lastUi > 50) { refresh(); app.dirty = false; lastUi = now; }
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+$('speedLbl').textContent = `${speed()} frame/detik`;
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

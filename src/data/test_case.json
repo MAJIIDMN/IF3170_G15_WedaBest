@@ -1,0 +1,16 @@
+{
+  "truck": {
+    "dimensions": {"w": 6, "l": 6, "h": 4},
+    "max_capacity": 100
+  },
+  "packages": [
+    {"id": "P1", "dimensions": {"w": 3, "l": 3, "h": 2}, "value": 50, "weight": 20, "is_fragile": false, "eta": 2},
+    {"id": "P2", "dimensions": {"w": 2, "l": 2, "h": 2}, "value": 30, "weight": 10, "is_fragile": true, "eta": 1},
+    {"id": "P3", "dimensions": {"w": 4, "l": 2, "h": 1}, "value": 20, "weight": 8, "is_fragile": false, "eta": 3},
+    {"id": "P4", "dimensions": {"w": 6, "l": 3, "h": 2}, "value": 70, "weight": 40, "is_fragile": false, "eta": 2},
+    {"id": "P5", "dimensions": {"w": 2, "l": 2, "h": 4}, "value": 40, "weight": 25, "is_fragile": false, "eta": 1},
+    {"id": "P6", "dimensions": {"w": 3, "l": 2, "h": 2}, "value": 25, "weight": 15, "is_fragile": true, "eta": 4},
+    {"id": "P7", "dimensions": {"w": 1, "l": 1, "h": 3}, "value": 10, "weight": 3, "is_fragile": false, "eta": 5},
+    {"id": "P8", "dimensions": {"w": 4, "l": 4, "h": 2}, "value": 60, "weight": 35, "is_fragile": false, "eta": 3}
+  ]
+}
