@@ -241,7 +241,7 @@ Alurnya adalah:
   \item memilih induk dengan peluang yang sebanding dengan fitness;
   \item melakukan \textit{crossover} untuk menggabungkan informasi dua induk;
   \item melakukan \textit{mutasi} kecil untuk menjaga keragaman;
-  \item membentuk generasi baru dan mengulang langkah 2--4 sampai jumlah generasi tercapai.
+  \item membentuk generasi baru dan mengulang langkah 2-4 sampai jumlah generasi tercapai.
 \end{enumerate}
 Ukuran populasi dan jumlah generasi merupakan dua parameter utama: keduanya memperluas
 eksplorasi, tetapi juga menambah waktu komputasi.
@@ -283,7 +283,7 @@ state saat membangkitkan neighbor cukup menyalin bagian yang berubah saja.
 \hd{Kelas} & \hd{Isi} & \hd{Diubah algoritma?} \\ \hline
 \code{Truck} & Dimensi $(W, L, H)$ dan \code{max\_capacity} & Tidak \\ \hline
 \code{Package} & \code{id}, dimensi asli $(w, l, h)$, \code{value}, \code{weight}, \code{is\_fragile}, \code{eta} & Tidak \\ \hline
-\code{Placement} & Referensi \code{Package}, \code{position} $(x,y,z)$ atau \code{None} jika di luar truk, \code{orientation\_idx} (0--5), dan \code{truck\_idx} & Ya \\ \hline
+\code{Placement} & Referensi \code{Package}, \code{position} $(x,y,z)$ atau \code{None} jika di luar truk, \code{orientation\_idx} (0-5), dan \code{truck\_idx} & Ya \\ \hline
 \code{State} & Daftar \code{Truck} dan satu \code{Placement} untuk setiap paket & Ya \\ \hline
 \end{tabular}
 \end{table}
@@ -507,9 +507,9 @@ valid. Alur satu generasi adalah sebagai berikut.
         dengan peluang masing-masing 0,5. Gen dicocokkan berdasarkan \code{id} paket, sehingga anak
         selalu berisi tepat satu placement untuk setiap paket. Jika crossover tidak terjadi, anak
         adalah salinan induk pertama.
-  \item \textbf{Mutasi}: dengan peluang \code{mutation\_rate} = 0,2, anak dikenai 1--3 move acak dari
+  \item \textbf{Mutasi}: dengan peluang \code{mutation\_rate} = 0,2, anak dikenai 1-3 move acak dari
         \code{make\_random\_neighbor} (swap, relocate, atau rotate).
-  \item Langkah 3--5 diulang sampai ukuran populasi kembali penuh.
+  \item Langkah 3-5 diulang sampai ukuran populasi kembali penuh.
 \end{enumerate}
 
 GA tidak memiliki kriteria berhenti dini. Pencarian selalu berjalan tepat \code{max\_iter}
@@ -865,7 +865,7 @@ sebagai \code{stuck\_count} per 1.000 iterasi.
 \code{make\_population} & Populasi awal dari \code{make\_initial\_state} (semua valid) \\ \hline
 \code{roulette} & Seleksi \textit{roulette wheel} dengan fitness yang digeser ke positif \\ \hline
 \code{crossover} & \textit{Uniform crossover} per paket \\ \hline
-\code{mutate} & 1--3 move acak dengan peluang \code{mutation\_rate} \\ \hline
+\code{mutate} & 1-3 move acak dengan peluang \code{mutation\_rate} \\ \hline
 \code{best\_by\_fitness} & Individu dengan fitness tertinggi pada suatu populasi \\ \hline
 \code{best\_valid} & Individu valid dengan value tertinggi pada suatu populasi \\ \hline
 \code{run} & Loop generasi GA \\ \hline
@@ -1022,7 +1022,7 @@ Random Restart & 205 / 205 / 200 & 12 / 16 / 15 & 0,68 & \code{MAX\_RESTARTS}; 1
 \end{table}
 
 Pada Sideways Move, \code{max\_consecutive\_sideways} = 50 membatasi jumlah langkah datar
-\emph{berturut-turut}, bukan jumlah total langkah datar selama pencarian. Penghitungnya kembali
+berturut-turut, bukan jumlah total langkah datar selama pencarian. Penghitungnya kembali
 ke 0 setiap kali terjadi langkah naik. Oleh karena itu total sideways pada seed 3 bisa bernilai 51:
 dari 54 iterasi, 3 merupakan langkah naik dan 51 merupakan langkah datar, dengan 50 langkah datar
 berturut-turut di bagian akhir.
@@ -1137,9 +1137,9 @@ yang sama dengan Steepest Ascent di ketiga seed: keduanya mengevaluasi seluruh n
 berhenti di local optimum yang sama, hanya jalur kenaikannya yang dapat berbeda.
 
 \subsection{Perbandingan Durasi}
-HC Steepest Ascent dan Stochastic paling cepat (sekitar 0,05 detik) karena hanya butuh 1--3
+HC Steepest Ascent dan Stochastic paling cepat (sekitar 0,05 detik) karena hanya butuh 1-3
 iterasi. Sideways Move paling lambat di antara varian HC (sekitar 2 detik) karena setiap langkah
-datar tetap mengenumerasi seluruh neighbor. SA selalu menjalankan 9.206 iterasi dengan durasi 3--4
+datar tetap mengenumerasi seluruh neighbor. SA selalu menjalankan 9.206 iterasi dengan durasi 3-4
 detik. Durasi GA tumbuh hampir linear terhadap populasi dan iterasi.
 
 \subsection{Konsistensi Hasil}
@@ -1159,7 +1159,7 @@ dengan 100 iterasi sudah cukup.
 Dengan penerimaan probabilistik, plot $e^{\Delta E/T}$ menunjukkan nilai yang tinggi di awal
 (langkah buruk sering diterima) dan mendekati nol setelah suhu turun, kecuali $\Delta E = 0$ yang
 selalu bernilai 1. Pada seed 1, SA sempat meninggalkan state optimum 205 dan berakhir di 200,
-sehingga penyimpanan \code{best\_valid} tetap penting. Frekuensi stuck sekitar 1,7--2 kejadian per
+sehingga penyimpanan \code{best\_valid} tetap penting. Frekuensi stuck sekitar 1,7-2 kejadian per
 1.000 iterasi; angka ini juga menghitung jendela setelah optimum ditemukan, sehingga lebih tepat
 dibaca sebagai banyaknya jendela 500 iterasi tanpa perbaikan.
 
