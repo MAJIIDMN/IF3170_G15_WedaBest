@@ -152,8 +152,10 @@ def run(
         population = next_population
 
     duration = time.perf_counter() - start
-    final_fitnesses = [objective_function(ind, objective) for ind in population]
-    best_individual = best_by_fitness(population, final_fitnesses).copy()
+    if best_individual is None:
+        # max_iter == 0: belum ada generasi, ambil populasi awal apa adanya.
+        final_fitnesses = [objective_function(ind, objective) for ind in population]
+        best_individual = best_by_fitness(population, final_fitnesses).copy()
     if initial_state is None:
         initial_state = best_individual.copy()
 
@@ -172,6 +174,7 @@ def run(
         "final_state": best_individual,
         "best_valid_state": best_valid_state,
         "final_objective": objective_function(best_individual, objective),
+        "final_value": best_individual.total_value(),
         "best_valid_value": best_valid_state.total_value() if best_valid_state else None,
         "population_size": population_size,
         "iterations": max_iter,
@@ -208,7 +211,6 @@ def experiment_matrix(ga_config: dict) -> List[Tuple[str, int, int]]:
 
 
 def save_result(result: dict, out_dir: str | Path) -> Path:
-    """Simpan state awal & akhir, history, dan ringkasan satu run ke out_dir."""
     import json
     from models.io import save_history_csv, save_state
 
@@ -220,8 +222,10 @@ def save_result(result: dict, out_dir: str | Path) -> Path:
     save_history_csv(out / "history.csv", result["history"])
 
     summary = {
+        "algorithm": "ga",
         "objective": result["params"]["objective"],
         "final_objective": result["final_objective"],
+        "final_value": result["final_value"],
         "best_valid_value": result["best_valid_value"],
         "population_size": result["population_size"],
         "iterations": result["iterations"],
