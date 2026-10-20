@@ -162,35 +162,3 @@ def all_violations(violations: Dict[str, List[str]]) -> List[str]:
             out.append(f"[{cat}] {m}")
     return out
 
-
-def objective_value(state: State, feasible_only: bool = True) -> int:
-    if feasible_only:
-        feasible, _ = is_feasible(state)
-        if not feasible:
-            return 0
-    return state.total_value()
-
-
-def evaluate(state: State) -> Tuple[int, bool, Dict[str, List[str]]]:
-    feasible, violations = is_feasible(state)
-    value = state.total_value() if feasible else 0
-    return value, feasible, violations
-
-
-def evaluate_with_penalty(
-    state: State,
-    overlap_penalty: int = 50, #placeholder doang
-    weight_penalty: int = 10, #placeholder doang
-    floating_penalty: int = 30, #placeholder doang
-    fragile_penalty: int = 100, #placeholder doang
-) -> int:
-    base = state.total_value()
-    violations = validate(state)
-    penalty = (
-        len(violations["overlap"]) * overlap_penalty
-        + len(violations["weight"]) * weight_penalty
-        + len(violations["support"]) * floating_penalty
-        + len(violations["fragile"]) * fragile_penalty
-        + len(violations["bounds"]) * overlap_penalty
-    )
-    return max(0, base - penalty)
