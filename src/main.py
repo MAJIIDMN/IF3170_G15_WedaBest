@@ -24,8 +24,6 @@ HC_VARIANTS = {
 }
 
 
-# ---------------------------------------------------------------- input
-
 def _ask(prompt: str, default) -> str:
     raw = input(f"{prompt} [{default}]: ").strip()
     return raw or str(default)
@@ -105,8 +103,6 @@ def choose_hc_variant() -> str:
     return HC_VARIANTS[_choose("Pilih varian Hill Climbing:", options)]
 
 
-# ---------------------------------------------------------------- satu run
-
 def print_result(result: dict, out: Path, objective: str, plots: List[Path]) -> None:
     feasible = is_feasible(result["final_state"])[0]
     print(f"Value awal  : {result['initial_state'].total_value()}")
@@ -145,8 +141,6 @@ def run_single(ctx: dict, algorithm: str) -> None:
     print_result(result, out, config["objective"], plots)
 
 
-# ---------------------------------------------------------------- eksperimen laporan
-
 def experiment_hc(ctx: dict) -> None:
     trucks, packages = ctx["trucks"], ctx["packages"]
     records = HC.run_all_experiments(ctx["config"], trucks, packages, ctx["output_root"], ctx["dataset"])
@@ -173,10 +167,12 @@ def experiment_sa(ctx: dict) -> None:
         out = SA.save_result(
             result, ctx["output_root"] / "sa" / ctx["dataset"] / "default" / f"run{k}_seed{seed}"
         )
-        plot_run(out, trucks, packages, params["probability_threshold"])
+        plot_run(out, trucks, packages)
         print(
             f"SA seed={seed}: {initial_state.total_value()} -> best_valid {result['best_valid_value']}, "
-            f"iterasi={result['iterations']}, stuck={result['extra']['stuck_count']}, "
+            f"iterasi={result['iterations']}, "
+            f"stuck={result['extra']['stuck_count']} "
+            f"({result['extra']['stuck_rate']:.2f}/1000 iter), "
             f"durasi={result['duration_s']:.2f}s"
         )
     print(f"Output SA   : {ctx['output_root'] / 'sa' / ctx['dataset'] / 'default'}")
@@ -220,8 +216,6 @@ def run_experiments(ctx: dict) -> None:
         experiment_ga(ctx)
 
 
-# ---------------------------------------------------------------- visualisasi
-
 def make_replay(ctx: dict) -> None:
     options = {"1": "Simulated Annealing", "2": "Genetic Algorithm", "3": "Hill Climbing"}
     algorithm = {"1": "sa", "2": "ga", "3": "hc"}[_choose("Replay untuk algoritma:", options)]
@@ -248,8 +242,6 @@ def replot(ctx: dict) -> None:
         plot_run(run, ctx["trucks"], ctx["packages"])
     print(f"Plot dibuat ulang untuk {len(runs)} run dataset {ctx['dataset']}.")
 
-
-# ---------------------------------------------------------------- menu
 
 def setup(config: dict) -> dict:
     dataset_path = choose_dataset(config)
