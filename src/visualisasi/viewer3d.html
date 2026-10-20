@@ -104,7 +104,6 @@
         <label class="row"><span>Suhu awal T₀</span><input type="number" id="p_T0" value="100" step="any"></label>
         <label class="row"><span>Cooling rate</span><input type="number" id="p_rate" value="0.999" step="0.0001"></label>
         <label class="row"><span>Suhu minimum</span><input type="number" id="p_Tmin" value="0.01" step="any"></label>
-        <label class="row"><span>Probability threshold</span><input type="number" id="p_thr" value="0.6" step="0.05"></label>
         <label class="row"><span>Max neighbor tries</span><input type="number" id="p_tries" value="50"></label>
         <label class="row"><span>Stuck window</span><input type="number" id="p_stuck" value="500"></label>
       </div>
@@ -183,7 +182,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-// ===================== Dataset bawaan (src/data/) =====================
+// Dataset bawaan (src/data/)
 const PACKAGES = [
   { id: "P1", dimensions: { w: 3, l: 3, h: 2 }, value: 50, weight: 20, is_fragile: false, eta: 2 },
   { id: "P2", dimensions: { w: 2, l: 2, h: 2 }, value: 30, weight: 10, is_fragile: true, eta: 1 },
@@ -205,7 +204,7 @@ const BUILTIN = {
   },
 };
 
-// ===================== Model (port dari models/model.py) =====================
+// Model (port dari models/model.py)
 const ORIENT = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
 const ORIENT_LABEL = ["{w:x, l:y, h:z}","{w:x, l:z, h:y}","{w:y, l:x, h:z}","{w:z, l:x, h:y}","{w:y, l:z, h:x}","{w:z, l:y, h:x}"];
 const TRUCK_GAP = 2;   // jarak antar-truk di gambar
@@ -257,7 +256,7 @@ function parseProblem(data) {
 // State = array sejajar dengan problem.packages: { pos: [x,y,z] | null, ori, t (indeks truk) }
 const copyState = st => st.map(p => ({ pos: p.pos ? [...p.pos] : null, ori: p.ori, t: p.t }));
 
-// ===================== RNG ber-seed =====================
+// RNG ber-seed
 function makeRng(seed) {
   let a = (seed >>> 0) || 1;
   const random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
@@ -271,7 +270,7 @@ function makeRng(seed) {
   };
 }
 
-// ===================== Constraint & objective (port dari geometry.py & SA.py) =====================
+// Constraint & objective (port dari geometry.py & SA.py)
 function aabb(prob, st, i) {
   const [x, y, z] = st[i].pos, [w, l, h] = eff(prob.packages[i], st[i].ori);
   return [x, y, z, x + w, y + l, z + h];
@@ -337,7 +336,7 @@ function evaluate(prob, st, withMsg = false) {
   return { value, weights, pen, obj: value - lambda * pen, feasible: pen === 0, v };
 }
 
-// ===================== Operator neighbor (port dari operators.py) =====================
+// Operator neighbor (port dari operators.py)
 function randomPosition(d, T, rng) {
   if (d[0] > T.W || d[1] > T.L || d[2] > T.H) return null;
   return [rng.randint(0, T.W - d[0]), rng.randint(0, T.L - d[1]), rng.randint(0, T.H - d[2])];
@@ -384,7 +383,7 @@ function initialState(prob, rng, attempts = 100) {
   return st;
 }
 
-// ===================== Algoritma =====================
+// Algoritma
 class SARunner {
   constructor(prob, init, prm, rng) {
     Object.assign(this, { prob, prm, rng, kind: 'sa' });
@@ -407,9 +406,8 @@ class SARunner {
       if (nE.feasible) break;
     }
     const delta = nE.obj - this.curE.obj;
-    let p = null, accepted;
-    if (delta > 0) accepted = true;
-    else { p = Math.exp(delta / T); accepted = p >= prm.thr; }
+    const p = Math.exp(delta / T);
+    const accepted = delta > 0 || rng.random() < p;
     if (accepted) {
       this.cur = nb; this.curE = nE;
       if (nE.feasible && (this.bestVal === null || nE.value > this.bestVal)) { this.best = copyState(nb); this.bestVal = nE.value; }
@@ -451,7 +449,7 @@ class HCRunner {
   }
 }
 
-// ===================== Three.js scene =====================
+// Three.js scene
 const BG = 0xf6efdf;
 const view = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -598,7 +596,7 @@ function frameCamera(prob) {
   controls.update();
 }
 
-// ===================== Tooltip =====================
+// Tooltip
 const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById('tip');
 let hoverIdx = -1;
 renderer.domElement.addEventListener('pointermove', e => {
@@ -625,7 +623,7 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; hoverIdx = -1; applyLook(); });
 
-// ===================== Grafik =====================
+// Grafik
 const chart = document.getElementById('chart'), cg = chart.getContext('2d');
 const series = { pts: [], stride: 1, n: 0 };
 function resetSeries() { series.pts = []; series.stride = 1; series.n = 0; }
@@ -670,14 +668,14 @@ function drawChart(cursorIter = null) {
   cg.fillStyle = 'rgba(200,54,59,.4)'; cg.fillRect(lx, 6, 12, 10); cg.fillStyle = col('--muted'); cg.fillText('state tidak valid', lx + 16, 15);
 }
 
-// ===================== App state & UI =====================
+// App state & UI
 const $ = id => document.getElementById(id);
 const opt = { labels: true, outside: true };
 const app = { prob: null, init: null, runner: null, running: false, shown: null, viewMode: 'cur', replay: null, rIdx: 0, rPlaying: false, dirty: true, lastShown: null };
 
 function msg(t, isErr) { $('msg').textContent = t; $('msg').style.color = isErr ? 'var(--bad)' : 'var(--accent)'; }
 function params() {
-  return { T0: +$('p_T0').value, rate: +$('p_rate').value, Tmin: +$('p_Tmin').value, thr: +$('p_thr').value,
+  return { T0: +$('p_T0').value, rate: +$('p_rate').value, Tmin: +$('p_Tmin').value,
     tries: Math.max(1, +$('p_tries').value), stuck: Math.max(1, +$('p_stuck').value), maxIter: +$('p_iter').value,
     nb: Math.max(1, +$('p_nb').value), side: +$('p_side').value };
 }
@@ -754,7 +752,7 @@ function refresh() {
   setRunBtn();
 }
 
-// ---------- tombol algoritma ----------
+// Tombol algoritma
 $('algo').addEventListener('change', () => {
   const sa = $('algo').value === 'sa';
   $('saParams').style.display = sa ? '' : 'none'; $('hcParams').style.display = sa ? 'none' : '';
@@ -781,7 +779,7 @@ function stepRunner(n) {
   }
 }
 $('speed').addEventListener('input', () => { $('speedLbl').textContent = app.replay ? `${speed()} frame/detik` : `${speed()} iter/frame`; });
-for (const id of ['p_T0', 'p_rate', 'p_Tmin', 'p_thr', 'p_tries', 'p_stuck', 'p_iter', 'p_nb', 'p_side']) $(id).addEventListener('change', () => { if (app.runner) { Object.assign(app.runner.prm, params()); } });
+for (const id of ['p_T0', 'p_rate', 'p_Tmin', 'p_tries', 'p_stuck', 'p_iter', 'p_nb', 'p_side']) $(id).addEventListener('change', () => { if (app.runner) { Object.assign(app.runner.prm, params()); } });
 $('p_seed').addEventListener('change', () => { if (app.prob) { app.running = false; newInit(); } });
 
 $('vInit').onclick = () => { if (app.replay) { app.rIdx = 0; syncScrub(); } else app.viewMode = 'init'; app.dirty = true; };
@@ -793,7 +791,7 @@ $('vBest').onclick = () => {
 $('optLabels').onchange = e => { opt.labels = e.target.checked; applyLook(); };
 $('optOutside').onchange = e => { opt.outside = e.target.checked; applyLook(); };
 
-// ---------- replay ----------
+// Replay
 const FRAME_INFO = { sa: 'tiap move yang diterima', ga: 'individu terbaik tiap generasi', hc: 'tiap kali current berganti' };
 function startReplay(data) {
   const prob = parseProblem(data.dataset);
@@ -838,7 +836,7 @@ $('rPrev').onclick = () => { app.rIdx = Math.max(0, app.rIdx - 1); syncScrub(); 
 $('rNext').onclick = () => { app.rIdx = Math.min(app.replay.frames.length - 1, app.rIdx + 1); syncScrub(); app.dirty = true; };
 $('rExit').onclick = () => exitReplay(false);
 
-// ---------- muat file ----------
+// Muat file
 function loadStateJson(data, name) {
   if (!app.prob) { msg('Muat dataset dulu sebelum state JSON.', true); return; }
   const idx = new Map(app.prob.packages.map((p, i) => [p.id, i]));
@@ -879,7 +877,7 @@ addEventListener('dragover', e => e.preventDefault());
 addEventListener('drop', e => { e.preventDefault(); dragDepth = 0; $('drop').style.display = 'none'; handleFiles(e.dataTransfer.files); });
 addEventListener('keydown', e => { if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) { e.preventDefault(); toggleRun(); } });
 
-// ===================== Loop =====================
+// Loop
 function resize() {
   const w = view.clientWidth, h = view.clientHeight;
   renderer.setSize(w, h); labelRenderer.setSize(w, h);

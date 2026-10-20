@@ -1,23 +1,3 @@
-"""Jalankan SA, GA, atau HC lalu simpan "replay" (state per langkah) untuk visualisasi/viewer3d.html.
-
-Kode algoritma tidak diubah. Snapshot state diambil dengan "spy": fungsi di modul algoritma
-diganti sementara dengan pembungkus yang mencatat state, lalu dikembalikan lagi.
-    SA -> SA.make_valid_neighbor(current, ...)  dipanggil sekali per iterasi
-          frame baru setiap kali current berganti (= move diterima)
-    GA -> GA.best_by_fitness(populasi, fitness)  dipanggil sekali per generasi
-          frame = individu terbaik tiap generasi
-    HC -> iter_all_feasible_neighbors / make_random_neighbor
-          frame baru setiap kali state asal neighbor berganti (= current berganti)
-
-Pakai (dari folder src/):
-    python -m visualisasi.export_replay                              -> SA, dataset_utama, semua seed
-    python -m visualisasi.export_replay --algo ga --pop 20 --iter 200
-    python -m visualisasi.export_replay --algo hc --variant sideways
-    python -m visualisasi.export_replay multi_truck_case.json --seed 2
-    python -m visualisasi.export_replay --algo sa --param cooling_rate=0.995
-
-Hasil: output/replay/<algo>[-<varian>]_<dataset>_seed<s>.json -> buka di visualisasi/viewer3d.html
-"""
 from __future__ import annotations
 
 import argparse
@@ -56,7 +36,6 @@ def thin(items, limit):
 
 
 class Spy:
-    """Ganti module.name dengan pembungkus selama blok `with`, lalu kembalikan."""
 
     def __init__(self, targets):
         self.targets = targets   # list (module, nama, pembungkus)
@@ -169,7 +148,6 @@ def parse_value(text):
 
 
 def export_replays(config, dataset_path, algo_name, seeds, variant=None, extra_params=None):
-    """Jalankan algo_name ('sa'/'ga'/'hc') untuk tiap seed dan simpan replay. Kembalikan daftar file."""
     module_name, recorder = RECORDERS[algo_name]
     algo = importlib.import_module(f"algoritma.{module_name}")
     variant = variant if algo_name == "hc" else None

@@ -1,15 +1,3 @@
-"""Plot hasil run (objective vs iterasi, e^(dE/T) untuk SA) dan gambar 3D state awal/akhir.
-
-Membaca folder hasil save_result (history.csv, summary.json, initial_state.json, final_state.json)
-dan menyimpan gambar PNG ke folder yang sama.
-
-Pakai (dari folder src/):
-    python -m visualisasi.plots ../output/sa/test_case/default/run1_seed1
-    python -m visualisasi.plots ../output                    -> semua run di bawah folder ini
-    python -m visualisasi.plots <folder> --dataset data/multi_truck_case.json
-
-Dataset ditebak dari path output (output/<algo>/<dataset>/...), --dataset untuk menimpanya.
-"""
 from __future__ import annotations
 
 import csv
@@ -28,7 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from models.geometry import is_feasible
-from models.io import load_config, load_dataset, load_state
+from models.io import load_dataset, load_state
 from models.model import Package, State, Truck
 
 ALGO_NAMES = {"sa": "Simulated Annealing", "ga": "Genetic Algorithm", "hc": "Hill-Climbing"}
@@ -61,7 +49,7 @@ def read_summary(run_dir: Path) -> dict:
 
 
 def detect_algorithm(history: List[dict], summary: dict) -> str:
-    # summary SA/GA tidak menyimpan nama algoritma, jadi tebak dari kolom history
+    # HC memakai "hill_climbing"; SA/GA dikenali dari kolom history.
     if summary.get("algorithm") == "hill_climbing":
         return "hc"
     columns = history[0].keys() if history else ()
@@ -83,8 +71,6 @@ def _title(algorithm: str, summary: dict, run_dir: Path) -> str:
         info.append(f"objective akhir {summary['final_objective']:.2f}")
     return f"{name}\n{' | '.join(info)}"
 
-
-# ---------------------------------------------------------------- plot objective
 
 def plot_objective(history: List[dict], algorithm: str, path: Path, title: str = "") -> None:
     if algorithm == "ga":
@@ -143,20 +129,19 @@ def _plot_objective_ga(history: List[dict], path: Path, title: str) -> None:
     plt.close(fig)
 
 
-def plot_accept_prob(history: List[dict], threshold: Optional[float], path: Path, title: str = "") -> None:
-    # Hanya iterasi dengan delta_e <= 0; delta_e > 0 selalu diterima sehingga tidak punya peluang
+def plot_accept_prob(history: List[dict], path: Path, title: str = "") -> None:
+    # Semua iterasi diplot, termasuk delta_e > 0 yang menghasilkan e^(dE/T) > 1.
+    # Nilai > 1 berarti move selalu diterima; garis 1.0 jadi batas referensi.
     points = [h for h in history if h.get("accept_prob") is not None]
     accepted = [h for h in points if h.get("accepted")]
     rejected = [h for h in points if not h.get("accepted")]
     fig, ax = plt.subplots(figsize=(10, 4.5))
     ax.scatter([h["iter"] for h in accepted], [h["accept_prob"] for h in accepted], s=3, label="diterima")
     ax.scatter([h["iter"] for h in rejected], [h["accept_prob"] for h in rejected], s=3, label="ditolak")
-    if threshold is not None:
-        ax.axhline(threshold, color="red", linestyle="--", linewidth=1, label=f"threshold = {threshold}")
+    ax.axhline(1.0, color="red", linestyle="--", linewidth=1, label="batas always-accept (1.0)")
     ax.set_xlabel("Iterasi")
     ax.set_ylabel("e^(ΔE/T)")
-    ax.set_ylim(-0.02, 1.02)
-    ax.set_title(title or "SA: e^(ΔE/T) vs iterasi (hanya ΔE ≤ 0)")
+    ax.set_title(title or "SA: e^(ΔE/T) vs iterasi")
     ax.grid(alpha=0.3)
     ax.legend(markerscale=3)
     fig.tight_layout()
@@ -164,10 +149,7 @@ def plot_accept_prob(history: List[dict], threshold: Optional[float], path: Path
     plt.close(fig)
 
 
-# ---------------------------------------------------------------- gambar state 3D
-
 def draw_state(state: State, path: Path, title: str = "") -> None:
-    """Satu subplot 3D per truk, paket di luar truk ditulis di bawah gambar."""
     n_trucks = len(state.trucks)
     color_of = {p.package.id: CMAP(i % 20) for i, p in enumerate(state.placements)}
     fig = plt.figure(figsize=(7 * n_trucks, 6.5))
@@ -212,8 +194,6 @@ def draw_state(state: State, path: Path, title: str = "") -> None:
     plt.close(fig)
 
 
-# ---------------------------------------------------------------- satu folder run
-
 def guess_dataset(run_dir: Path) -> Optional[Path]:
     # output[/objective_eta]/<algo>/<dataset>/... -> src/data/<dataset>.json
     parts = run_dir.resolve().parts
@@ -229,9 +209,7 @@ def plot_run(
     run_dir: str | Path,
     trucks: Optional[List[Truck]] = None,
     packages: Optional[List[Package]] = None,
-    threshold: Optional[float] = None,
 ) -> List[Path]:
-    """Buat semua gambar untuk satu folder run. Kembalikan daftar file yang dibuat."""
     run_dir = Path(run_dir)
     history = read_history(run_dir / "history.csv")
     summary = read_summary(run_dir)
@@ -243,12 +221,9 @@ def plot_run(
         plot_objective(history, algorithm, run_dir / "objective.png", title)
         made.append(run_dir / "objective.png")
     if algorithm == "sa" and history:
-        if threshold is None:
-            config = load_config(SRC_DIR / "data" / "experiments.json")
-            threshold = config["simulated_annealing"].get("probability_threshold")
         stuck = summary.get("stuck_count")
         sa_title = title + (f" | stuck {stuck}x" if stuck is not None else "")
-        plot_accept_prob(history, threshold, run_dir / "accept_prob.png", sa_title)
+        plot_accept_prob(history, run_dir / "accept_prob.png", sa_title)
         made.append(run_dir / "accept_prob.png")
 
     if trucks is None or packages is None:
