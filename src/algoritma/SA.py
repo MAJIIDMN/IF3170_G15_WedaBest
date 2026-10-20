@@ -33,7 +33,10 @@ def schedule(iteration: int, initial_temperature: float, cooling_rate: float) ->
 
 
 def acceptance_probability(delta_e: float, temperature: float) -> float:
-    return math.exp(delta_e / temperature)
+    ratio = delta_e / temperature
+    if ratio > 709.0:
+        return float("inf")
+    return math.exp(ratio)
 
 
 def make_valid_neighbor(state: State, rng: random.Random, max_tries: int) -> Tuple[State, int]:
@@ -52,7 +55,6 @@ def run(
     initial_temperature: float = 100.0,
     cooling_rate: float = 0.999,
     min_temperature: float = 0.01,
-    probability_threshold: float = 0.6,
     max_iter: int = 20000,
     stuck_window: int = 500,
     max_neighbor_tries: int = 50,
@@ -67,7 +69,8 @@ def run(
 
     best_valid_state: Optional[State] = current.copy() if current_feasible else None
 
-    # Stuck: +1 setiap stuck_window iterasi berturut-turut tanpa objective terbaik naik
+    # Stuck: satu kejadian per stuck_window iterasi berturut-turut tanpa
+    # perbaikan objective terbaik (objective dengan penalti). Bukan local optimum.
     best_obj = current_obj
     no_improve_local = 0
     stuck_count_global = 0
@@ -85,11 +88,13 @@ def run(
         delta_e = neighbor_obj - current_obj
 
         if delta_e > 0:
-            accept_prob = None
+            # AIMA Fig 4.5: improving move selalu diterima; e^(dE/T) untuk dE > 0 bisa overflow.
+            # Simpan 1.0 sebagai probabilitas penerimaannya.
+            accept_prob = 1.0
             accepted = True
         else:
             accept_prob = acceptance_probability(delta_e, temperature)
-            accepted = accept_prob >= probability_threshold
+            accepted = rng.random() < accept_prob
 
         if accepted:
             current = neighbor
@@ -126,6 +131,7 @@ def run(
         iteration += 1
 
     duration = time.perf_counter() - start
+    stuck_rate = (stuck_count_global / iteration * 1000.0) if iteration else 0.0
 
     return {
         "algorithm": "sa",
@@ -133,7 +139,6 @@ def run(
             "initial_temperature": initial_temperature,
             "cooling_rate": cooling_rate,
             "min_temperature": min_temperature,
-            "probability_threshold": probability_threshold,
             "max_iter": max_iter,
             "stuck_window": stuck_window,
             "max_neighbor_tries": max_neighbor_tries,
@@ -147,7 +152,12 @@ def run(
         "iterations": iteration,
         "duration_s": duration,
         "history": history,
-        "extra": {"stuck_count": stuck_count_global},
+        "extra": {
+            "stuck_count": stuck_count_global,
+            "stuck_window": stuck_window,
+            "stuck_rate": stuck_rate,
+            "stuck_definition": STUCK_DEFINITION,
+        },
     }
 
 
@@ -155,7 +165,6 @@ CONFIG_KEYS = [
     "initial_temperature",
     "cooling_rate",
     "min_temperature",
-    "probability_threshold",
     "max_iter",
     "stuck_window",
     "max_neighbor_tries",
@@ -173,7 +182,6 @@ def params_from_config(config: dict) -> dict:
 
 
 def save_result(result: dict, out_dir: str | Path) -> Path:
-    """Simpan state awal & akhir, history, dan ringkasan satu run ke out_dir."""
     import json
     from models.io import save_history_csv, save_state
 
@@ -185,10 +193,17 @@ def save_result(result: dict, out_dir: str | Path) -> Path:
     save_history_csv(out / "history.csv", result["history"])
 
     summary = {
+        "algorithm": "sa",
         "objective": result["params"]["objective"],
         "final_objective": result["final_objective"],
+        "final_value": result["final_state"].total_value(),
+        "best_valid_value": result["best_valid_value"],
+        "iterations": result["iterations"],
         "duration_s": result["duration_s"],
         "stuck_count": result["extra"]["stuck_count"],
+        "stuck_window": result["extra"]["stuck_window"],
+        "stuck_rate": result["extra"]["stuck_rate"],
+        "stuck_definition": result["extra"]["stuck_definition"],
     }
     with (out / "summary.json").open("w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
