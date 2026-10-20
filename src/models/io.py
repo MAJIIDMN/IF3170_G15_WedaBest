@@ -29,17 +29,6 @@ def load_dataset(path: str | Path) -> Tuple[List[Truck], List[Package]]:
     return trucks, packages
 
 
-def save_dataset(path: str | Path, trucks: List[Truck], packages: List[Package]) -> None:
-    data = {
-        "trucks": [t.to_dict() for t in trucks],
-        "packages": [pkg.to_dict() for pkg in packages],
-    }
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-
 def save_state(path: str | Path, state: State) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -88,8 +77,3 @@ def load_config(path: str | Path) -> dict:
     with Path(path).open("r", encoding="utf-8") as f:
         return json.load(f)
 
-
-def ensure_output_dir(path: str | Path = "output") -> Path:
-    p = Path(path)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
